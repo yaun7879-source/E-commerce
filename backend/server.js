@@ -10,9 +10,22 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { initializeDatabase } = require('./config/schema');
 const passport = require('./config/passport');
 
-console.log('Loaded env from:', path.resolve(__dirname, '.env'));
-console.log('GOOGLE_CLIENT_ID=', process.env.GOOGLE_CLIENT_ID ? 'loaded' : 'missing');
-console.log('GOOGLE_CLIENT_SECRET=', process.env.GOOGLE_CLIENT_SECRET ? 'loaded' : 'missing');
+// Validate required environment variables
+const validateEnv = () => {
+    const required = ['JWT_SECRET', 'SESSION_SECRET'];
+    const missing = required.filter(key => !process.env[key]);
+
+    if (missing.length > 0 && process.env.NODE_ENV === 'production') {
+        console.error(`ERROR: Missing required environment variables: ${missing.join(', ')}`);
+        process.exit(1);
+    }
+
+    if (missing.length > 0) {
+        console.warn(`WARNING: Missing environment variables: ${missing.join(', ')}`);
+    }
+};
+
+validateEnv();
 
 // Async error wrapper for route handlers
 const asyncHandler = (fn) => (req, res, next) => {
@@ -70,15 +83,20 @@ app.use(bodyParser.json({ limit: '10kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
 
 // Session middleware for Passport
+const sessionSecret = process.env.SESSION_SECRET;
+if (!sessionSecret) {
+    throw new Error('SESSION_SECRET environment variable is required');
+}
+
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+        secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
@@ -90,10 +108,13 @@ app.use(passport.session());
 (async () => {
     try {
         await initializeDatabase();
-        console.log('✅ Database initialized successfully');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Database initialized successfully');
+        }
     } catch (error) {
-        console.error('⚠️  Database initialization error:', error.message);
-        console.log('⚠️  Server will continue, but database features may not work until connection is established.');
+        if (process.env.NODE_ENV === 'development') {
+            console.error('⚠️  Database initialization error:', error.message);
+        }
     }
 })();
 
@@ -105,11 +126,32 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', app._authLimiter, authRoutes);
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'Backend is running!', timestamp: new Date() });
+app.get('/api/health', async (req, res) => {
+    try {
+        const { getPool } = require('./config/db');
+        const pool = await getPool();
+        const connection = await pool.getConnection();
+        await connection.query('SELECT 1');
+        connection.release();
+
+        res.status(200).json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV,
+            database: 'connected'
+        });
+    } catch (error) {
+        res.status(503).json({
+            status: 'unhealthy',
+            error: error.message,
+            database: 'disconnected',
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // Expose CSRF token endpoint when csurf is available on app
@@ -130,8 +172,10 @@ app.use(errorHandler);
 
 // Start server
 const server = app.listen(PORT, () => {
-    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📧 API Health Check: http://localhost:${PORT}/api/health\n`);
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`\n🚀 Server running on http://localhost:${PORT}`);
+        console.log(`📧 API Health Check: http://localhost:${PORT}/api/health\n`);
+    }
 });
 
 server.on('error', (err) => {

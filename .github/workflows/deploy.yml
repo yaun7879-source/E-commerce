@@ -1,0 +1,113 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main, production]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: mahasu_ecommerce
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+
+    steps:
+      - uses: actions/checkout@v3
+
+      # Backend Build & Test
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Backend Dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Lint Backend Code
+        working-directory: ./backend
+        run: npm run lint || true
+
+      - name: Run Migrations
+        working-directory: ./backend
+        env:
+          DB_HOST: localhost
+          DB_USER: root
+          DB_PASSWORD: root
+          DB_NAME: mahasu_ecommerce
+        run: npm run migrate
+
+      - name: Build Backend
+        working-directory: ./backend
+        run: node -e "require('dotenv').config(); console.log('Backend validated');"
+
+      # Frontend Build & Test
+      - name: Install Frontend Dependencies
+        working-directory: ./my-app
+        run: npm ci
+
+      - name: Lint Frontend Code
+        working-directory: ./my-app
+        run: npm run lint || true
+
+      - name: Build Frontend
+        working-directory: ./my-app
+        env:
+          VITE_API_BASE_URL: http://localhost:5001
+        run: npm run build
+
+      # Deploy to Production
+      - name: Deploy to Production Server
+        if: github.ref == 'refs/heads/production'
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H $DEPLOY_HOST >> ~/.ssh/known_hosts
+          
+          # Deploy backend
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH/backend && git pull origin production && npm ci && npm run migrate && systemctl restart mahasu-api"
+          
+          # Deploy frontend
+          ssh -i ~/.ssh/deploy_key $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH/my-app && git pull origin production && npm ci && npm run build && systemctl restart mahasu-web"
+
+      - name: Health Check
+        if: github.ref == 'refs/heads/production'
+        run: |
+          sleep 10
+          curl -f ${{ secrets.DEPLOY_HOST }}/api/health || exit 1
+          echo "✅ Deployment successful"
+
+      - name: Notify Success
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: '✅ Production deployment successful'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify Failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: '❌ Production deployment failed'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

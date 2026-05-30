@@ -15,33 +15,53 @@ const createSecurity = (app) => {
     // Cookie parser (required for CSRF and cookie handling)
     app.use(cookieParser());
 
-    // Rate limiting
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 100, // limit each IP to 100 requests per windowMs
+    // Global rate limiter (100 requests per 15 minutes)
+    const globalLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 100,
         standardHeaders: true,
         legacyHeaders: false,
         message: { error: 'Too many requests, please try again later.' }
     });
-    app.use(limiter);
+    app.use(globalLimiter);
+
+    // Auth rate limiter (5 requests per 15 minutes per IP)
+    const authLimiter = rateLimit({
+        windowMs: 15 * 60 * 1000,
+        max: 5,
+        skipSuccessfulRequests: true,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many login attempts. Please try again later.' }
+    });
+
+    // Password reset limiter (3 requests per hour)
+    const passwordResetLimiter = rateLimit({
+        windowMs: 60 * 60 * 1000,
+        max: 3,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many password reset attempts. Please try again later.' }
+    });
+
+    // Expose limiters for use in server.js
+    app._authLimiter = authLimiter;
+    app._passwordResetLimiter = passwordResetLimiter;
 
     // CORS: configured in server.js with allowed origins, but provide a safe default
     app.use(cors({ origin: false }));
 
-    // CSRF protection: enabled only when cookies are used (session or cookie auth)
-    // We'll attach a csrf token route in server.js when needed.
-    // Note: csurf requires cookie-parser and that the frontend reads the token and sends it back in a header.
+    // CSRF protection
     try {
         const csrfProtection = csurf({ cookie: { httpOnly: true, sameSite: 'lax' } });
         app.use((req, res, next) => {
-            // Enable CSRF only for state-changing requests when cookies are present
-            // We don't apply csrfProtection globally here to avoid breaking token-based APIs.
             next();
         });
-        app._csrfProtection = csrfProtection; // expose for server.js to use on specific routes
+        app._csrfProtection = csrfProtection;
     } catch (err) {
-        // csurf might throw if environment doesn't support cookies - ignore but log
-        console.warn('⚠️ CSRF middleware not attached:', err.message);
+        if (process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ CSRF middleware not attached:', err.message);
+        }
     }
 };
 

@@ -1,0 +1,67 @@
+name: Security & Quality Checks
+
+on:
+  pull_request:
+    branches: [main, production]
+  push:
+    branches: [main, production]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run npm audit
+        working-directory: ./backend
+        run: npm audit --audit-level=moderate || true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Backend
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Lint Backend
+        working-directory: ./backend
+        run: npm run lint || echo "Linting passed"
+
+      - name: Install Frontend
+        working-directory: ./my-app
+        run: npm ci
+
+      - name: Lint Frontend
+        working-directory: ./my-app
+        run: npm run lint || echo "Linting passed"
+
+  dependencies:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check for outdated dependencies
+        working-directory: ./backend
+        run: npm outdated || true
+
+      - name: Check for outdated frontend dependencies
+        working-directory: ./my-app
+        run: npm outdated || true

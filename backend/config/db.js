@@ -69,12 +69,14 @@ const initializePool = async () => {
             });
 
             const connection = await poolInstance.getConnection();
-            console.log('✅ MySQL Database connected successfully!');
+            if (process.env.NODE_ENV === 'development') {
+                console.log('✅ MySQL Database connected successfully!');
+            }
             connection.release();
             return poolInstance;
         } catch (error) {
             console.error('❌ Database connection error:', error.message);
-            poolPromise = null; // Reset so it can retry
+            poolPromise = null;
             throw error;
         }
     })();

@@ -6,7 +6,9 @@
     "scripts": {
         "start": "node server.js",
         "dev": "nodemon server.js",
-        "init-db": "node initDatabase.js"
+        "init-db": "node initDatabase.js",
+        "migrate": "node runMigrations.js",
+        "prod": "NODE_ENV=production node server.js"
     },
     "keywords": [
         "ecommerce",

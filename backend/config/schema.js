@@ -19,7 +19,9 @@ const createProductsTable = async () => {
     try {
         const pool = await getPool();
         await pool.query(query);
-        console.log('✅ Products table created/exists');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Products table created/exists');
+        }
     } catch (error) {
         console.error('❌ Error creating products table:', error);
     }
@@ -30,7 +32,9 @@ const seedProducts = async () => {
         const pool = await getPool();
         const [[{ count }]] = await pool.query('SELECT COUNT(*) AS count FROM products');
         if (count > 0) {
-            console.log('✅ Products already seeded');
+            if (process.env.NODE_ENV === 'development') {
+                console.log('✅ Products already seeded');
+            }
             return;
         }
 
@@ -54,7 +58,9 @@ const seedProducts = async () => {
             [products]
         );
 
-        console.log('✅ Seeded products into database');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Seeded products into database');
+        }
     } catch (error) {
         console.error('❌ Error seeding products:', error);
     }
@@ -75,7 +81,9 @@ const createReviewsTable = async () => {
     try {
         const pool = await getPool();
         await pool.query(query);
-        console.log('✅ Reviews table created/exists');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Reviews table created/exists');
+        }
     } catch (error) {
         console.error('❌ Error creating reviews table:', error);
     }
@@ -132,7 +140,9 @@ const createUsersTable = async () => {
             await pool.query('ALTER TABLE users ADD COLUMN locked_until DATETIME NULL');
         }
 
-        console.log('✅ Users table created/updated with password reset fields, role, and account lockout');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Users table created/updated with password reset fields, role, and account lockout');
+        }
     } catch (error) {
         console.error('❌ Error creating users table:', error);
     }
@@ -160,7 +170,9 @@ const createAddressesTable = async () => {
     try {
         const pool = await getPool();
         await pool.query(query);
-        console.log('✅ Addresses table created/exists');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Addresses table created/exists');
+        }
     } catch (error) {
         console.error('❌ Error creating addresses table:', error);
     }
@@ -221,7 +233,9 @@ const createOrdersTable = async () => {
             await pool.query(`ALTER TABLE orders ADD COLUMN address_id INT NULL`);
         }
 
-        console.log('✅ Orders table created/updated with payment columns');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Orders table created/updated with payment columns');
+        }
     } catch (error) {
         console.error('❌ Error creating or updating orders table:', error);
     }
@@ -244,7 +258,9 @@ const createOrderItemsTable = async () => {
     try {
         const pool = await getPool();
         await pool.query(query);
-        console.log('✅ Order Items table created/exists');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Order Items table created/exists');
+        }
     } catch (error) {
         console.error('❌ Error creating order items table:', error);
     }
@@ -268,7 +284,9 @@ const createCartTable = async () => {
     try {
         const pool = await getPool();
         await pool.query(query);
-        console.log('✅ Cart table created/exists');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Cart table created/exists');
+        }
     } catch (error) {
         console.error('❌ Error creating cart table:', error);
     }
@@ -276,7 +294,9 @@ const createCartTable = async () => {
 
 // Initialize all tables
 const initializeDatabase = async () => {
-    console.log('\n📊 Initializing database tables...\n');
+    if (process.env.NODE_ENV === 'development') {
+        console.log('\n📊 Initializing database tables...\n');
+    }
     await createProductsTable();
     await seedProducts();
     await createReviewsTable();
@@ -285,7 +305,9 @@ const initializeDatabase = async () => {
     await createOrdersTable();
     await createOrderItemsTable();
     await createCartTable();
-    console.log('\n✅ All tables initialized!\n');
+    if (process.env.NODE_ENV === 'development') {
+        console.log('\n✅ All tables initialized!\n');
+    }
 };
 
 module.exports = { initializeDatabase };

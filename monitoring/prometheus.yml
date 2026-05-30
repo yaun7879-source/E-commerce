@@ -1,0 +1,22 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'mahasu-api'
+    static_configs:
+      - targets: ['localhost:5001']
+    metrics_path: '/metrics'
+
+  - job_name: 'mahasu-frontend'
+    static_configs:
+      - targets: ['localhost:80']
+
+  - job_name: 'mahasu-db'
+    static_configs:
+      - targets: ['localhost:3306']
+
+  # System metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']
