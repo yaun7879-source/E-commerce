@@ -1,17 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const reviewController = require('../controllers/reviewController');
+const verifyToken = require('../middleware/auth');
 
-// Get all reviews across products
-router.get('/', reviewController.getAllReviews);
+// Async error wrapper
+const asyncHandler = (fn) => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-// Get review summary for all products
-router.get('/summary', reviewController.getReviewSummary);
+// Get all reviews across products - public
+router.get('/', asyncHandler(reviewController.getAllReviews));
 
-// Get reviews for a specific product
-router.get('/product/:productId', reviewController.getReviewsByProductId);
+// Get review summary for all products - public
+router.get('/summary', asyncHandler(reviewController.getReviewSummary));
 
-// Add a new review for a product
-router.post('/product/:productId', reviewController.createReview);
+// Get reviews for a specific product - public
+router.get('/product/:productId', asyncHandler(reviewController.getReviewsByProductId));
+
+// Add a new review for a product - authenticated only
+router.post('/product/:productId', verifyToken, asyncHandler(reviewController.createReview));
 
 module.exports = router;

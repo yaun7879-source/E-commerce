@@ -52,27 +52,55 @@ const ensureDatabaseExists = async () => {
     await connection.end();
 };
 
-const poolPromise = (async () => {
-    await ensureDatabaseExists();
-    const poolInstance = mysql.createPool({
-        ...config,
-        waitForConnections: true,
-        connectionLimit: 10,
-        queueLimit: 0,
-    });
+let poolInstance = null;
+let poolPromise = null;
 
-    const connection = await poolInstance.getConnection();
-    console.log('✅ MySQL Database connected successfully!');
-    connection.release();
-    return poolInstance;
-})();
+const initializePool = async () => {
+    if (poolPromise) return poolPromise;
+
+    poolPromise = (async () => {
+        try {
+            await ensureDatabaseExists();
+            poolInstance = mysql.createPool({
+                ...config,
+                waitForConnections: true,
+                connectionLimit: 10,
+                queueLimit: 0,
+            });
+
+            const connection = await poolInstance.getConnection();
+            console.log('✅ MySQL Database connected successfully!');
+            connection.release();
+            return poolInstance;
+        } catch (error) {
+            console.error('❌ Database connection error:', error.message);
+            poolPromise = null; // Reset so it can retry
+            throw error;
+        }
+    })();
+
+    return poolPromise;
+};
 
 const getPool = async () => {
-    return poolPromise;
+    if (poolInstance) {
+        return poolInstance;
+    }
+
+    try {
+        await initializePool();
+        if (!poolInstance) {
+            throw new Error('Pool initialization failed - pool is still null');
+        }
+        return poolInstance;
+    } catch (error) {
+        console.error('❌ Error getting database pool:', error.message);
+        throw error;
+    }
 };
 
 module.exports = {
     getPool,
     config,
-    poolPromise,
+    initializePool,
 };

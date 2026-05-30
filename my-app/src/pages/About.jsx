@@ -12,6 +12,25 @@ const About = () => {
             {/* OUR STORY */}
             <div className="about-section">
                 <h2>Our Story</h2>
+
+                {/* FOUNDER CIRCULAR PHOTO */}
+                <div className="founder-profile">
+                    <div className="founder-circle-wrap">
+                        <div className="founder-circle">
+                            <img
+                                src="/images/sir-photo.jpeg"
+                                alt="Founder of Mahasu"
+                            />
+                        </div>
+                        <div className="founder-ring" />
+                    </div>
+                    <div className="founder-info">
+                        <span className="founder-label">Our Founder</span>
+                        <h3 className="founder-name">Rahul Udhwani</h3>
+                        <p className="founder-title">Master Perfumer & Visionary</p>
+                    </div>
+                </div>
+
                 <p>Founded with a passion for authentic fragrances, Mahasu has been committed to creating handcrafted candles and aromatic products that transform spaces into sanctuaries of peace and memory.</p>
                 <p>Every candle tells a story. We believe in honoring traditions while embracing innovation, sourcing the finest natural ingredients from sustainable suppliers across India.</p>
                 <p>What started as a small family venture has blossomed into a beloved brand serving thousands of happy customers across the country. Our journey is defined by dedication to quality, sustainability, and the art of fragrance.</p>
@@ -33,31 +52,26 @@ const About = () => {
                         <h3>100% Natural Soy Wax</h3>
                         <p>Clean burning and eco-friendly.</p>
                     </div>
-
                     <div className="about-card">
                         <div className="about-card-icon">✨</div>
                         <h3>Hand-Poured</h3>
                         <p>Crafted in small batches for quality.</p>
                     </div>
-
                     <div className="about-card">
                         <div className="about-card-icon">🌿</div>
                         <h3>Premium Oils</h3>
                         <p>From trusted sustainable sources.</p>
                     </div>
-
                     <div className="about-card">
                         <div className="about-card-icon">📦</div>
                         <h3>Elegant Packaging</h3>
                         <p>Designed with care and sustainability.</p>
                     </div>
-
                     <div className="about-card">
                         <div className="about-card-icon">🤝</div>
                         <h3>Supporting Communities</h3>
                         <p>Fair-trade and artisan partnerships.</p>
                     </div>
-
                     <div className="about-card">
                         <div className="about-card-icon">🇮🇳</div>
                         <h3>Made in India</h3>
@@ -84,7 +98,93 @@ const About = () => {
                     </div>
                 </div>
             </div>
+
             <style>{`
+                /* ── FOUNDER PROFILE ── */
+                .founder-profile {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    gap: 1.2rem;
+                    margin: clamp(1.5rem, 3vw, 2.5rem) 0 clamp(1.8rem, 3.5vw, 2.8rem);
+                }
+
+                .founder-circle-wrap {
+                    position: relative;
+                    flex-shrink: 0;
+                    display: inline-block;
+                }
+
+                .founder-circle {
+                    width: clamp(150px, 20vw, 220px);
+                    height: clamp(150px, 20vw, 220px);
+                    border-radius: 50%;
+                    overflow: hidden;
+                    border: clamp(3px, 0.5vw, 5px) solid #C9A96E;
+                    box-shadow: 0 clamp(6px, 1.5vw, 12px) clamp(20px, 3vw, 36px) rgba(201, 169, 110, 0.3);
+                    position: relative;
+                    z-index: 1;
+                }
+
+                .founder-circle img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    object-position: center top;
+                    display: block;
+                }
+
+                /* Decorative outer ring */
+                .founder-ring {
+                    position: absolute;
+                    top: -10px;
+                    left: -10px;
+                    right: -10px;
+                    bottom: -10px;
+                    border-radius: 50%;
+                    border: 1.5px dashed rgba(201, 169, 110, 0.45);
+                    animation: founder-spin 18s linear infinite;
+                }
+
+                @keyframes founder-spin {
+                    from { transform: rotate(0deg); }
+                    to   { transform: rotate(360deg); }
+                }
+
+                .founder-info {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 0.3rem;
+                }
+
+                .founder-label {
+                    font-size: clamp(0.6rem, 1.2vw, 0.68rem);
+                    letter-spacing: 0.22em;
+                    text-transform: uppercase;
+                    color: var(--gold-dark);
+                    font-weight: 500;
+                }
+
+                .founder-name {
+                    font-family: 'Playfair Display', serif;
+                    font-size: clamp(1.3rem, 3vw, 1.9rem);
+                    color: var(--char);
+                    font-weight: 600;
+                    margin: 0;
+                    line-height: 1.2;
+                }
+
+                .founder-title {
+                    font-size: clamp(0.8rem, 1.6vw, 0.92rem);
+                    color: var(--muted);
+                    font-style: italic;
+                    font-family: 'Playfair Display', serif;
+                    margin: 0;
+                }
+
+                /* ── EXISTING STYLES ── */
                 .about-hero {
                     padding: clamp(3rem, 7vw, 5rem) clamp(1.2rem, 5vw, 3rem);
                     background: linear-gradient(135deg, rgba(201,169,110,0.12), rgba(250,246,240,0.95));
@@ -97,7 +197,7 @@ const About = () => {
                     font-size: clamp(2.4rem, 6vw, 4rem);
                     margin-bottom: 1rem;
                     letter-spacing: -0.05em;
-                     color: var(--char);
+                    color: var(--char);
                 }
 
                 .about-hero p {
@@ -210,6 +310,14 @@ const About = () => {
                     color: var(--muted);
                     text-transform: uppercase;
                     letter-spacing: 0.12em;
+                }
+
+                @media (max-width: 480px) {
+                    .founder-profile {
+                        flex-direction: column;
+                        align-items: center;
+                        text-align: center;
+                    }
                 }
             `}</style>
         </div>

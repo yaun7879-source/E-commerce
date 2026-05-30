@@ -94,6 +94,11 @@ const createUsersTable = async () => {
       address TEXT,
       city VARCHAR(100),
       zip_code VARCHAR(20),
+      role VARCHAR(50) DEFAULT 'customer',
+      reset_token VARCHAR(255),
+      reset_token_expiry DATETIME,
+      failed_login_attempts INT DEFAULT 0,
+      locked_until DATETIME NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
@@ -101,9 +106,63 @@ const createUsersTable = async () => {
     try {
         const pool = await getPool();
         await pool.query(query);
-        console.log('✅ Users table created/exists');
+
+        const [resetTokenColumn] = await pool.query("SHOW COLUMNS FROM users LIKE 'reset_token'");
+        if (resetTokenColumn.length === 0) {
+            await pool.query('ALTER TABLE users ADD COLUMN reset_token VARCHAR(255) NULL');
+        }
+
+        const [resetExpiryColumn] = await pool.query("SHOW COLUMNS FROM users LIKE 'reset_token_expiry'");
+        if (resetExpiryColumn.length === 0) {
+            await pool.query('ALTER TABLE users ADD COLUMN reset_token_expiry DATETIME NULL');
+        }
+
+        const [roleColumn] = await pool.query("SHOW COLUMNS FROM users LIKE 'role'");
+        if (roleColumn.length === 0) {
+            await pool.query("ALTER TABLE users ADD COLUMN role VARCHAR(50) DEFAULT 'customer'");
+        }
+
+        const [failedLoginColumn] = await pool.query("SHOW COLUMNS FROM users LIKE 'failed_login_attempts'");
+        if (failedLoginColumn.length === 0) {
+            await pool.query('ALTER TABLE users ADD COLUMN failed_login_attempts INT DEFAULT 0');
+        }
+
+        const [lockedUntilColumn] = await pool.query("SHOW COLUMNS FROM users LIKE 'locked_until'");
+        if (lockedUntilColumn.length === 0) {
+            await pool.query('ALTER TABLE users ADD COLUMN locked_until DATETIME NULL');
+        }
+
+        console.log('✅ Users table created/updated with password reset fields, role, and account lockout');
     } catch (error) {
         console.error('❌ Error creating users table:', error);
+    }
+};
+
+// Create Addresses Table
+const createAddressesTable = async () => {
+    const query = `
+    CREATE TABLE IF NOT EXISTS addresses (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      label VARCHAR(100),
+      full_name VARCHAR(100) NOT NULL,
+      street VARCHAR(255) NOT NULL,
+      city VARCHAR(100) NOT NULL,
+      state VARCHAR(100) NOT NULL,
+      zip VARCHAR(20) NOT NULL,
+      country VARCHAR(100) NOT NULL DEFAULT 'India',
+      phone VARCHAR(20) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `;
+    try {
+        const pool = await getPool();
+        await pool.query(query);
+        console.log('✅ Addresses table created/exists');
+    } catch (error) {
+        console.error('❌ Error creating addresses table:', error);
     }
 };
 
@@ -113,6 +172,7 @@ const createOrdersTable = async () => {
     CREATE TABLE IF NOT EXISTS orders (
       id INT AUTO_INCREMENT PRIMARY KEY,
       user_id INT NOT NULL,
+      address_id INT NULL,
       order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       total_amount DECIMAL(10, 2) NOT NULL,
       payment_method VARCHAR(100),
@@ -123,7 +183,8 @@ const createOrdersTable = async () => {
       shipping_address TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (address_id) REFERENCES addresses(id) ON DELETE SET NULL
     )
   `;
     try {
@@ -153,6 +214,11 @@ const createOrdersTable = async () => {
         const [shippingAddressColumns] = await pool.query("SHOW COLUMNS FROM orders LIKE 'shipping_address'");
         if (shippingAddressColumns.length === 0) {
             await pool.query(`ALTER TABLE orders ADD COLUMN shipping_address TEXT`);
+        }
+
+        const [addressIdColumns] = await pool.query("SHOW COLUMNS FROM orders LIKE 'address_id'");
+        if (addressIdColumns.length === 0) {
+            await pool.query(`ALTER TABLE orders ADD COLUMN address_id INT NULL`);
         }
 
         console.log('✅ Orders table created/updated with payment columns');
@@ -215,6 +281,7 @@ const initializeDatabase = async () => {
     await seedProducts();
     await createReviewsTable();
     await createUsersTable();
+    await createAddressesTable();
     await createOrdersTable();
     await createOrderItemsTable();
     await createCartTable();

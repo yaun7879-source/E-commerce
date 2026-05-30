@@ -74,6 +74,10 @@ const Contact = () => {
             <div className="contact-content">
                 {/* CONTACT FORM */}
                 <form className="contact-form" onSubmit={handleSubmit}>
+                    <div className="contact-form-badge">
+                        <span className="contact-form-badge-icon">👉</span>
+                        <span>Get in Touch</span>
+                    </div>
                     {submitted ? (
                         <div className="success-box">
                             <div className="success-check">✓</div>
@@ -205,9 +209,40 @@ const Contact = () => {
                 }
 
                 .contact-form {
+                    position: relative;
+                    overflow: visible;
                     display: flex;
                     flex-direction: column;
-                    gap: 1rem;
+                    gap: 3rem;
+                }
+
+                .contact-form-badge {
+                    position: absolute;
+                    top: -18px;
+                    left: clamp(1.2rem, 2vw, 2rem);
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    padding: 0.65rem 1rem;
+                    background: #fff;
+                    border: 1px solid rgba(201,169,110,0.35);
+                    border-radius: 999px;
+                    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+                    font-size: 0.95rem;
+                    color: #2A1F14;
+                    z-index: 2;
+                }
+
+                .contact-form-badge-icon {
+                    width: 30px;
+                    height: 30px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    border-radius: 50%;
+                    background: rgba(201,169,110,0.16);
+                    color: #C9A96E;
+                    font-size: 1rem;
                 }
 
                 .error-box {

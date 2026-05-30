@@ -1,20 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productController');
+const verifyToken = require('../middleware/auth');
+const checkRole = require('../middleware/role');
 
-// GET all products
-router.get('/', productController.getAllProducts);
+// Async error wrapper
+const asyncHandler = (fn) => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-// GET product by ID
-router.get('/:id', productController.getProductById);
+// GET all products - public
+router.get('/', asyncHandler(productController.getAllProducts));
 
-// POST create product
-router.post('/', productController.createProduct);
+// GET product by ID - public
+router.get('/:id', asyncHandler(productController.getProductById));
 
-// PUT update product
-router.put('/:id', productController.updateProduct);
+// POST create product - admin only
+router.post('/', verifyToken, checkRole('admin'), asyncHandler(productController.createProduct));
 
-// DELETE product
-router.delete('/:id', productController.deleteProduct);
+// PUT update product - admin only
+router.put('/:id', verifyToken, checkRole('admin'), asyncHandler(productController.updateProduct));
+
+// DELETE product - admin only
+router.delete('/:id', verifyToken, checkRole('admin'), asyncHandler(productController.deleteProduct));
 
 module.exports = router;

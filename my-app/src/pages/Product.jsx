@@ -919,10 +919,35 @@ const Product = ({ addToCart }) => {
     }
 }
 
+                .related-top {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    gap: 0.75rem;
+                    margin-bottom: 2rem;
+                }
+
+                .related-title {
+                    font-size: 2rem;
+                    margin: 0;
+                    letter-spacing: 0.04em;
+                    color: #2A1F14;
+                }
+
+                .related-subtitle {
+                    margin: 0;
+                    font-size: 1rem;
+                    color: #7A6855;
+                    line-height: 1.7;
+                    max-width: 630px;
+                }
+
                 .related-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
                     gap: 2.5rem;
+                    margin-top: 0.5rem;
                     animation: gridFadeIn 0.8s ease both;
                 }
 
@@ -960,9 +985,10 @@ const Product = ({ addToCart }) => {
                 }
 
                 .related-card:hover {
-                    transform: translateY(-16px) scale(1.02);
+                    transform: translateY(-10px) scale(1.02);
                     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.15);
                     border-color: #B8936A;
+                    z-index: 1;
                 }
 
                 .related-card-img {

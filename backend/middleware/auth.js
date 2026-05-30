@@ -1,25 +1,25 @@
 const jwt = require('jsonwebtoken');
 
-// Verify JWT token middleware
+const extractTokenFromRequest = (req) => {
+    const authHeader = req.headers.authorization || '';
+    if (authHeader.startsWith('Bearer ')) return authHeader.split(' ')[1];
+    if (req.cookies && req.cookies.token) return req.cookies.token;
+    return null;
+};
+
 const verifyToken = (req, res, next) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
+        const token = extractTokenFromRequest(req);
+        if (!token) return res.status(401).json({ error: 'Authentication token missing' });
 
-        if (!token) {
-            return res.status(401).json({ error: 'No token provided' });
-        }
-
-        jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-            if (err) {
-                return res.status(401).json({ error: 'Invalid token' });
-            }
-            req.userId = decoded.userId;
-            req.userEmail = decoded.email;
-            next();
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = { id: payload.userId, email: payload.email };
+        next();
+    } catch (err) {
+        return res.status(401).json({ error: 'Invalid or expired token' });
     }
 };
 
-module.exports = { verifyToken };
+module.exports = verifyToken;
+module.exports.verifyToken = verifyToken;
+module.exports.extractTokenFromRequest = extractTokenFromRequest;

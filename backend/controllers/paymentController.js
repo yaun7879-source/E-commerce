@@ -46,6 +46,7 @@ exports.verifyPayment = async (req, res) => {
       items,
       total_amount,
       shipping_address = '',
+      address_id = null,
     } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -69,21 +70,43 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ error: 'Invalid Razorpay signature.' });
     }
 
+    let addressText = shipping_address;
+    let insertAddressId = null;
+
+    if (address_id) {
+      const [addressRows] = await connection.query('SELECT * FROM addresses WHERE id = ? AND user_id = ?', [address_id, req.user.id]);
+      if (!addressRows.length) {
+        return res.status(400).json({ error: 'Selected address not found.' });
+      }
+      insertAddressId = address_id;
+      const address = addressRows[0];
+      addressText = [
+        address.full_name,
+        address.street,
+        `${address.city}, ${address.state} ${address.zip}`,
+        address.country,
+        `Phone: ${address.phone}`,
+      ]
+        .filter(Boolean)
+        .join(', ');
+    }
+
     await connection.beginTransaction();
 
     const [orderResult] = await connection.query(
       `INSERT INTO orders 
-        (user_id, total_amount, razorpay_order_id, razorpay_payment_id, payment_status, order_status, payment_method, shipping_address)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        (user_id, address_id, total_amount, razorpay_order_id, razorpay_payment_id, payment_status, order_status, payment_method, shipping_address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        req.userId,
+        req.user.id,
+        insertAddressId,
         total_amount,
         razorpay_order_id,
         razorpay_payment_id,
         'paid',
         'confirmed',
         'razorpay',
-        shipping_address,
+        addressText,
       ]
     );
 
@@ -96,7 +119,7 @@ exports.verifyPayment = async (req, res) => {
       );
     }
 
-    await connection.query('DELETE FROM cart WHERE user_id = ?', [req.userId]);
+    await connection.query('DELETE FROM cart WHERE user_id = ?', [req.user.id]);
     await connection.commit();
 
     res.status(201).json({ orderId, message: 'Payment verified and order created successfully.' });

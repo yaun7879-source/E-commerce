@@ -14,6 +14,41 @@ const EnhancedAuthPage = ({ onLogin }) => {
     const [authMessage, setAuthMessage] = useState('');
     const [authError, setAuthError] = useState('');
     const [authLoading, setAuthLoading] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+    const [showResetPanel, setShowResetPanel] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetToken, setResetToken] = useState('');
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        const email = params.get('email');
+        const first_name = params.get('first_name');
+        const last_name = params.get('last_name');
+        const id = params.get('id');
+        const phone = params.get('phone');
+
+        if (token && email) {
+            const user = {
+                id: id ? Number(id) : null,
+                email,
+                first_name: first_name || '',
+                last_name: last_name || '',
+                phone: phone || null,
+            };
+            localStorage.setItem('authToken', token);
+            localStorage.setItem('authUser', JSON.stringify(user));
+            onLogin && onLogin(user, token);
+            setAuthMessage('Signed in successfully with Google.');
+
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+        }
+    }, [onLogin]);
+    const [resetPassword, setResetPassword] = useState('');
+    const [resetStep, setResetStep] = useState('request');
+    const [resetMessage, setResetMessage] = useState('');
+    const [resetError, setResetError] = useState('');
     const [particles, setParticles] = useState([]);
     const [floatingHearts, setFloatingHearts] = useState([]);
 
@@ -76,7 +111,104 @@ const EnhancedAuthPage = ({ onLogin }) => {
         { label: 'Strong', color: '#6fa389' },
     ][strength];
 
+    const socialEnabled = true;
     const resetAuth = () => { setAuthError(''); setAuthMessage(''); };
+    const resetResetFlow = () => {
+        setResetLoading(false);
+        setResetError('');
+        setResetMessage('');
+        setResetEmail('');
+        setResetToken('');
+        setResetPassword('');
+        setResetStep('request');
+    };
+    const openForgotFlow = () => {
+        resetAuth();
+        resetResetFlow();
+        setShowResetPanel(true);
+    };
+    const closeForgotFlow = () => {
+        resetResetFlow();
+        setShowResetPanel(false);
+    };
+
+    const requestPasswordReset = async () => {
+        if (!resetEmail) {
+            setResetError('Please enter your account email.');
+            return;
+        }
+        setResetLoading(true);
+        setResetError('');
+        setResetMessage('');
+
+        try {
+            const res = await fetch('/api/users/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: resetEmail }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || data.message || 'Unable to request password reset');
+            setResetStep('confirm');
+            setResetMessage('If that email exists, a reset token was initiated. Check your inbox or server logs in development.');
+        } catch (e) {
+            setResetError(e.message);
+        } finally {
+            setResetLoading(false);
+        }
+    };
+
+    const confirmPasswordReset = async () => {
+        if (!resetToken || !resetPassword) {
+            setResetError('Please enter the reset token and your new password.');
+            return;
+        }
+        setResetLoading(true);
+        setResetError('');
+        setResetMessage('');
+
+        try {
+            const res = await fetch('/api/users/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: resetToken, password: resetPassword }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || data.message || 'Unable to reset password');
+            setResetMessage(data.message || 'Password reset successful, please sign in.');
+            setShowResetPanel(false);
+            setAuthMessage('Password reset successful. Please sign in with your new password.');
+            resetResetFlow();
+        } catch (e) {
+            setResetError(e.message);
+        } finally {
+            setResetLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (authMessage && !authError) {
+            const timer = setTimeout(() => {
+                setAuthMessage('');
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [authMessage, authError]);
+
+    const handleSocialLogin = (provider) => {
+        const providerRoutes = {
+            Google: '/api/auth/google',
+            Facebook: '/api/auth/facebook'
+        };
+        const authRoute = providerRoutes[provider];
+
+        if (!authRoute) {
+            setAuthError(`Unknown social provider: ${provider}`);
+            return;
+        }
+
+        window.location.href = authRoute;
+    };
 
     // Auto-clear success message and enable scroll after 2 seconds
     useEffect(() => {
@@ -116,7 +248,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword) { setAuthError('Please fill in all fields.'); return; }
         await requestUserAuth('register', { first_name: signupFirstName, last_name: signupLastName, email: signupEmail, password: signupPassword });
     };
-    const switchTab = (t) => { resetAuth(); setTab(t); };
+    const switchTab = (t) => { resetAuth(); closeForgotFlow(); setTab(t); };
 
     const GoogleSVG = () => (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -166,10 +298,10 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     100% { transform:translateY(-100vh) translateX(var(--drift)) scale(0.6); opacity:0; }
                 }
                 .eau-layout { position:relative; z-index:10; display:flex; width:100%; min-height:100vh; }
-                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem; position:relative; }
-                .eau-glow-halo { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(201,169,97,0.06) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; animation:haloPulse 6s ease-in-out infinite; filter:blur(25px); }
+                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:0rem 2rem 2rem; position:relative; }
+                .eau-glow-halo { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(201,169,97,0.06) 0%,transparent 70%); top:9%; left:50%; transform:translate(-50%,-50%); pointer-events:none; animation:haloPulse 6s ease-in-out infinite; filter:blur(25px); }
                 @keyframes haloPulse { 0%,100%{opacity:0.4;transform:translate(-50%,-50%) scale(0.95);} 50%{opacity:0.8;transform:translate(-50%,-50%) scale(1.15);} }
-                .eau-candle-icon { font-size:4.5rem; display:block; margin-bottom:1.2rem; filter:drop-shadow(0 0 25px rgba(201,169,97,0.7)) drop-shadow(0 0 50px rgba(168,47,47,0.3)); animation:candleFlicker 4s ease-in-out infinite; }
+                .eau-candle-icon { display:none; }
                 @keyframes candleFlicker {
                     0%,100%{filter:drop-shadow(0 0 25px rgba(201,169,97,0.7)) drop-shadow(0 0 50px rgba(168,47,47,0.3));transform:scaleY(1);}
                     33%{filter:drop-shadow(0 0 35px rgba(212,179,116,0.8)) drop-shadow(0 0 65px rgba(201,169,97,0.4));transform:scaleY(1.02);}
@@ -208,6 +340,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-social { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1.4rem; }
                 .eau-soc-btn { display:flex; align-items:center; justify-content:center; gap:0.6rem; padding:0.8rem; background:rgba(245,240,237,0.04); border:1px solid rgba(201,169,97,0.14); border-radius:12px; color:rgba(212,179,116,0.75); font-family:'Cormorant Garamond',serif; font-size:0.88rem; letter-spacing:0.03em; cursor:pointer; transition:all 0.22s; }
                 .eau-soc-btn:hover { background:rgba(201,169,97,0.1); border-color:rgba(201,169,97,0.4); color:#d4b574; transform:translateY(-2px); box-shadow:0 6px 20px rgba(201,169,97,0.12); }
+                .eau-soc-btn:disabled { opacity:0.45; cursor:not-allowed; transform:none; border-color:rgba(201,169,97,0.1); color:rgba(212,179,116,0.45); }
                 .eau-divider { display:flex; align-items:center; gap:0.8rem; margin-bottom:1.4rem; }
                 .eau-div-line2 { flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(212,179,116,0.15),transparent); }
                 .eau-div-txt { font-family:'Playfair Display',serif; font-style:italic; font-size:0.75rem; color:rgba(212,179,116,0.3); white-space:nowrap; letter-spacing:0.04em; }
@@ -286,8 +419,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 <div className="eau-layout">
                     <div className="eau-left">
                         <div className="eau-glow-halo" />
-                        <div style={{ textAlign: 'center', maxWidth: 400 }}>
-                            <div className="eau-candle-icon">🕯️</div>
+                        <div style={{ textAlign: 'center', maxWidth: 400, marginTop: '-0.6rem' }}>
                             <h1 className="eau-title">Light Up</h1>
                             <p className="eau-subtitle">Love & Celebration</p>
                             <div className="eau-divider">
@@ -332,8 +464,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
                                     <p className="eau-form-sub">Your celebration awaits</p>
                                 </div>
                                 <div className="eau-social">
-                                    <button className="eau-soc-btn"><GoogleSVG />Google</button>
-                                    <button className="eau-soc-btn"><FacebookSVG />Facebook</button>
+                                    <button type="button" className="eau-soc-btn" onClick={() => handleSocialLogin('Google')} disabled={!socialEnabled}><GoogleSVG />Google</button>
+                                    <button type="button" className="eau-soc-btn" onClick={() => handleSocialLogin('Facebook')} disabled={!socialEnabled}><FacebookSVG />Facebook</button>
                                 </div>
                                 <div className="eau-divider">
                                     <div className="eau-div-line2" /><span className="eau-div-txt">or sign in with email</span><div className="eau-div-line2" />
@@ -353,7 +485,53 @@ const EnhancedAuthPage = ({ onLogin }) => {
                                         <button className="eau-eye" type="button" onClick={() => setShowLoginPw(p => !p)}>{showLoginPw ? '🙈' : '👁'}</button>
                                     </div>
                                 </div>
-                                <div className="eau-forgot"><button className="eau-forgot-btn" type="button">Forgot your password?</button></div>
+                                <div className="eau-forgot"><button className="eau-forgot-btn" type="button" onClick={openForgotFlow}>Forgot your password?</button></div>
+                                {showResetPanel && (
+                                    <div style={{ marginTop: '1rem', padding: '1rem', border: '1px solid rgba(201,169,97,0.18)', borderRadius: '18px', background: 'rgba(10,8,5,0.94)' }}>
+                                        <p style={{ color: '#d4b574', fontSize: '0.92rem', marginBottom: '0.9rem' }}>
+                                            Reset your password securely. Enter your email to receive a reset token.
+                                        </p>
+                                        {resetStep === 'request' ? (
+                                            <>
+                                                <div className="eau-fgroup">
+                                                    <label className="eau-label">Email address<div className="eau-label-line" /></label>
+                                                    <div className="eau-fw">
+                                                        <span className="eau-ficon">✉</span>
+                                                        <input className="eau-input" type="email" placeholder="you@example.com" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
+                                                    </div>
+                                                </div>
+                                                <button className="eau-submit" type="button" onClick={requestPasswordReset} disabled={resetLoading}>
+                                                    <div className="eau-submit-inner">{resetLoading ? <><span className="eau-spin" />Sending...</> : <>Send Reset Token<span className="eau-arr">→</span></>}</div>
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="eau-fgroup">
+                                                    <label className="eau-label">Reset token<div className="eau-label-line" /></label>
+                                                    <div className="eau-fw">
+                                                        <span className="eau-ficon">🔑</span>
+                                                        <input className="eau-input" type="text" placeholder="Enter reset token" value={resetToken} onChange={e => setResetToken(e.target.value)} />
+                                                    </div>
+                                                </div>
+                                                <div className="eau-fgroup">
+                                                    <label className="eau-label">New password<div className="eau-label-line" /></label>
+                                                    <div className="eau-fw">
+                                                        <span className="eau-ficon">🔒</span>
+                                                        <input className="eau-input" type="password" placeholder="Create a new password" value={resetPassword} onChange={e => setResetPassword(e.target.value)} />
+                                                    </div>
+                                                </div>
+                                                <button className="eau-submit" type="button" onClick={confirmPasswordReset} disabled={resetLoading}>
+                                                    <div className="eau-submit-inner">{resetLoading ? <><span className="eau-spin" />Resetting...</> : <>Reset Password<span className="eau-arr">→</span></>}</div>
+                                                </button>
+                                            </>
+                                        )}
+                                        {resetError && <div className="eau-msg err">⚠ {resetError}</div>}
+                                        {resetMessage && <div className="eau-msg ok">✓ {resetMessage}</div>}
+                                        <button className="eau-tlink" type="button" onClick={() => resetStep === 'confirm' ? setResetStep('request') : closeForgotFlow()} style={{ marginTop: '0.8rem' }}>
+                                            {resetStep === 'confirm' ? 'Request a new token' : 'Cancel reset'}
+                                        </button>
+                                    </div>
+                                )}
                                 {authError && <div className="eau-msg err">⚠ {authError}</div>}
                                 {authMessage && <div className="eau-msg ok">✓ {authMessage}</div>}
                                 <button className="eau-submit" type="button" onClick={handleLogin} disabled={authLoading}>
@@ -372,8 +550,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
                                     <p className="eau-form-sub">Discover warmth in every flame</p>
                                 </div>
                                 <div className="eau-social">
-                                    <button className="eau-soc-btn"><GoogleSVG />Google</button>
-                                    <button className="eau-soc-btn"><FacebookSVG />Facebook</button>
+                                    <button type="button" className="eau-soc-btn" onClick={() => handleSocialLogin('Google')} disabled={!socialEnabled}><GoogleSVG />Google</button>
+                                    <button type="button" className="eau-soc-btn" onClick={() => handleSocialLogin('Facebook')} disabled={!socialEnabled}><FacebookSVG />Facebook</button>
                                 </div>
                                 <div className="eau-divider">
                                     <div className="eau-div-line2" /><span className="eau-div-txt">or sign up with email</span><div className="eau-div-line2" />

@@ -1,17 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
+const auth = require('../middleware/auth');
 
-// POST create order
-router.post('/', orderController.createOrder);
+// Async error wrapper
+const asyncHandler = (fn) => (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-// GET user orders
-router.get('/user/:userId', orderController.getUserOrders);
+// POST create order (authenticated)
+router.post('/', auth.verifyToken, asyncHandler(orderController.createOrder));
 
-// GET order details
-router.get('/:orderId', orderController.getOrderDetails);
+// GET user orders (authenticated) - server will ensure user matches
+router.get('/user/:userId', auth.verifyToken, asyncHandler(orderController.getUserOrders));
 
-// PUT update order status
-router.put('/:orderId', orderController.updateOrderStatus);
+// GET order details (authenticated)
+router.get('/:orderId', auth.verifyToken, asyncHandler(orderController.getOrderDetails));
+
+// PUT update order status (authenticated - consider adding admin check)
+router.put('/:orderId', auth.verifyToken, asyncHandler(orderController.updateOrderStatus));
 
 module.exports = router;

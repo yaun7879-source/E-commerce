@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from './context/AuthContext';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import AuthPage from './pages/AuthPage';
+import Checkout from './pages/Checkout';
 import products from './data/products';
 import './App.css';
 
 const catalog = products;
 
 function App() {
+  const { login: authLogin, logout: authLogout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Search state ──
@@ -47,6 +50,19 @@ function App() {
 
   const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
+  const clearAuth = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('authUser');
+    setAuthToken('');
+    setAuthUser(null);
+    authLogout();
+  };
+
+  const handleUnauthorized = () => {
+    clearAuth();
+    showToast('Session expired. Please sign in again.');
+  };
+
   const loadCart = async () => {
     if (!authToken || !authUser) return;
     try {
@@ -55,6 +71,10 @@ function App() {
           ...authHeaders,
         },
       });
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       if (!response.ok) {
         return;
       }
@@ -82,7 +102,7 @@ function App() {
     });
   };
 
-  const verifyRazorpayPayment = async (paymentResponse) => {
+  const verifyRazorpayPayment = async (paymentResponse, addressId = null, shippingAddress = '') => {
     const payload = {
       razorpay_order_id: paymentResponse.razorpay_order_id,
       razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -93,7 +113,8 @@ function App() {
         price: item.price,
       })),
       total_amount: cartTotal,
-      shipping_address: authUser?.address || '',
+      shipping_address: shippingAddress || authUser?.address || '',
+      address_id: addressId,
     };
 
     const response = await fetch('/api/payment/verify', {
@@ -116,7 +137,7 @@ function App() {
     return data;
   };
 
-  const handlePayNow = async () => {
+  const handlePayNow = async ({ addressId = null, shippingAddress = '' } = {}) => {
     if (!authUser || !authToken) {
       showToast('Please log in to checkout');
       return;
@@ -228,6 +249,7 @@ function App() {
   const handleLogin = (user, token) => {
     setAuthUser(user);
     setAuthToken(token);
+    authLogin(user, token);
   };
 
   const addToCart = async (product) => {
@@ -251,6 +273,11 @@ function App() {
         body: JSON.stringify({ productId, quantity: 1 }),
       });
 
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Unable to add item');
@@ -272,12 +299,16 @@ function App() {
     }
 
     try {
-      await fetch(`/api/cart/${cartItemId}`, {
+      const response = await fetch(`/api/cart/${cartItemId}`, {
         method: 'DELETE',
         headers: {
           ...authHeaders,
         },
       });
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       await loadCart();
     } catch (error) {
       console.error('Remove from cart failed:', error);
@@ -302,7 +333,7 @@ function App() {
     }
 
     try {
-      await fetch('/api/cart/update', {
+      const response = await fetch('/api/cart/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -310,6 +341,10 @@ function App() {
         },
         body: JSON.stringify({ cartItemId, quantity: newQuantity }),
       });
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
       await loadCart();
     } catch (error) {
       console.error('Update cart quantity failed:', error);
@@ -476,8 +511,21 @@ function App() {
             <Link to="/shop" onClick={handleNavClick}>Shop</Link>
             <Link to="/about" onClick={handleNavClick}>About</Link>
             <Link to="/contact" onClick={handleNavClick}>Contact</Link>
-            <Link to="/login" onClick={handleNavClick}>Login</Link>
-            <Link to="/signup" onClick={handleNavClick}>Signup</Link>
+            <Link
+              to="/login"
+              className="auth-pill-btn"
+              onClick={handleNavClick}
+              aria-label="Login / Signup"
+            >
+              <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="8" r="3" />
+                <path d="M6 20v-1a6 6 0 0 1 12 0v1" />
+              </svg>
+              <div className="auth-pill-text">
+                <span className="auth-pill-label">Account</span>
+                <span className="auth-pill-main">Login / Signup</span>
+              </div>
+            </Link>
           </div>
 
           {/* Nav Icons — single source of truth, no duplicates */}
@@ -598,10 +646,10 @@ function App() {
                     </div>
                     <button
                       className="cd-checkout"
-                      onClick={handlePayNow}
+                      onClick={() => navigate('/checkout')}
                       disabled={paymentLoading}
                     >
-                      {paymentLoading ? 'Processing...' : 'Pay Now'}
+                      {paymentLoading ? 'Processing...' : 'Checkout'}
                     </button>
                   </div>
                 )}
@@ -621,6 +669,19 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<AuthPage onLogin={handleLogin} />} />
             <Route path="/signup" element={<AuthPage onLogin={handleLogin} />} />
+            <Route
+              path="/checkout"
+              element={
+                <Checkout
+                  authUser={authUser}
+                  authToken={authToken}
+                  cartItems={cartItems}
+                  cartTotal={cartTotal}
+                  onPayNow={handlePayNow}
+                  showToast={showToast}
+                />
+              }
+            />
           </Routes>
         </main>
 
@@ -660,6 +721,11 @@ function App() {
 
         <div className="footer-bottom">
           <p>© 2025 Mahasu. All rights reserved.</p>
+
+          <p>
+            Designed & Developed by Yash Patel
+          </p>
+
           <p>Made with love in India 🇮🇳</p>
         </div>
       </div>

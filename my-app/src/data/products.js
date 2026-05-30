@@ -16,7 +16,7 @@ const products = [
     },
     {
         id: 2,
-        name: 'Ocean Breeze  Candle',
+        name: 'Ocean Breeze  Candle (3-pack)',
         price: 449,
         img: '/images/product3.png',
         category: 'Gel Candles',
@@ -31,7 +31,7 @@ const products = [
     },
     {
         id: 3,
-        name: 'Rose Pillar Candle',
+        name: 'Rose Pillar Candle -Duo',
         price: 399,
         img: '/images/product1.png',
         category: 'Gel Candles',
@@ -46,7 +46,7 @@ const products = [
     },
     {
         id: 4,
-        name: 'Round Shape Tealights ',
+        name: 'Round Shape Tealights (6-pack) ',
         price: 349,
         img: '/images/product6.png',
         category: 'Tealights',
@@ -61,17 +61,17 @@ const products = [
     },
     {
         id: 5,
-        name: 'Crystal LED Tealights (Set of 6)',
+        name: 'Pure Gel Candle(pack-12)',
         price: 699,
         img: '/images/product12.png',
         category: 'Tealights',
         rating: 4.8,
-        tag: 'Diwali Special',
+        tag: null,
         description: 'LED crystal tealights for safe, long-lasting decorative lighting.',
         details: [
-            'Battery-powered for indoor/outdoor use.',
+            'Made with premium Gel, High transparency, and long lasting.',
             'Flicker effect mimics a real flame.',
-            'Ideal for festival décor and gifting.'
+            'Reusable Glss container adds a touch of elegance to any setting.'
         ],
     },
     {
@@ -108,7 +108,7 @@ const products = [
 
     {
         id: 9,
-        name: 'Heart Shape Pink Candle',
+        name: 'Heart Shape Pink Candle (pack-12)',
         price: 599,
         img: '/images/product15.png',
         category: 'Jar Candles',
@@ -123,12 +123,12 @@ const products = [
     },
     {
         id: 10,
-        name: 'Mahasu Sandalwood Jar Candle',
+        name: 'Mahasu Scented Jar Candle',
         price: 599,
         img: '/images/story.png',
         category: 'Jar Candles',
         rating: 4.8,
-        tag: null,
+        tag: 'Different Scent',
         description: 'A warm sandalwood candle in a reusable jar, crafted for gentle grounding.',
         details: [
             'Earthy sandalwood with a hint of spice.',
@@ -140,7 +140,7 @@ const products = [
    
     {
         id: 11,
-        name: 'Bubble Heart Candle — Ivory',
+        name: 'Bubble Heart Candle — Red & White',
         price: 849,
         img: '/images/category1.png',
         category: 'Luxury',
@@ -155,22 +155,22 @@ const products = [
     },
     {
         id: 12,
-        name: 'Diwali Candle Gift Box',
+        name: 'Diwali Candle Gift Box (set of 6)',
         price: 1499,
-        img: '/images/product12.png',
+        img: '/images/hero3.png',
         category: 'Gift Sets',
         rating: 4.9,
         tag: 'Limited',
         description: 'A premium Diwali gift box with a curated candle selection and festive packaging.',
         details: [
-            'Includes 4 scented candles.',
-            'Luxury box with ribbon.',
-            'Ready to gift for family and friends.'
+            'Includes 6 scented candles and  Safe & Smokeless',
+            'Ready to gift for family and friends.',
+            'Reusable ,Long lasting & Energy Efficient'
         ],
     },
     {
         id: 13,
-        name: 'Romantic Rose Gift Set',
+        name: 'Romantic Rose Gift Set-duo',
         price: 1799,
         img: '/images/category3.png',
         category: 'Gift Sets',
@@ -182,6 +182,7 @@ const products = [
             'Wrapped in premium packaging.',
             'Perfect for anniversaries and celebrations.'
         ],
+
     }
 ];
 

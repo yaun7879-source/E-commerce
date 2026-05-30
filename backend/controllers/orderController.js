@@ -4,46 +4,54 @@ const { getPool } = require('../config/db');
 exports.createOrder = async (req, res) => {
     try {
         const pool = await getPool();
-        const {
-            userId,
-            items,
-            total_amount,
-            shipping_address,
-            payment_method,
-            payment_status = 'pending',
-            order_status = 'pending',
-            razorpay_order_id = null,
-            razorpay_payment_id = null,
-        } = req.body;
+        const { items, shipping_address, payment_method } = req.body;
 
-        // Create order
+        // Require authenticated user (req.user should be set by auth middleware)
+        if (!req.user || !req.user.id) return res.status(401).json({ error: 'Authentication required' });
+        const userId = req.user.id;
+
+        if (!Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'Order must contain at least one item' });
+        }
+
+        // Validate items and compute total server-side to prevent tampering
+        let computedTotal = 0;
+        const validatedItems = [];
+
+        for (const it of items) {
+            const productId = Number(it.product_id);
+            const quantity = Number(it.quantity);
+            if (!productId || quantity <= 0) {
+                return res.status(400).json({ error: 'Invalid product or quantity in items' });
+            }
+
+            const [rows] = await pool.query('SELECT id, price FROM products WHERE id = ?', [productId]);
+            if (rows.length === 0) return res.status(400).json({ error: `Product ${productId} not found` });
+
+            const price = Number(rows[0].price);
+            const lineTotal = price * quantity;
+            computedTotal += lineTotal;
+            validatedItems.push({ product_id: productId, quantity, price });
+        }
+
+        // Insert order with server-calculated total
         const [orderResult] = await pool.query(
-            `INSERT INTO orders 
-             (user_id, total_amount, shipping_address, payment_method, payment_status, order_status, razorpay_order_id, razorpay_payment_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                userId,
-                total_amount,
-                shipping_address,
-                payment_method,
-                payment_status,
-                order_status,
-                razorpay_order_id,
-                razorpay_payment_id,
-            ]
+            `INSERT INTO orders (user_id, total_amount, shipping_address, payment_method, payment_status, order_status)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [userId, computedTotal, shipping_address || '', payment_method || '', 'pending', 'pending']
         );
 
         const orderId = orderResult.insertId;
 
-        // Add order items
-        for (const item of items) {
+        // Add order items to DB
+        for (const item of validatedItems) {
             await pool.query(
                 'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
                 [orderId, item.product_id, item.quantity, item.price]
             );
         }
 
-        // Clear cart
+        // Clear cart server-side for this user
         await pool.query('DELETE FROM cart WHERE user_id = ?', [userId]);
 
         res.status(201).json({ orderId, message: 'Order created successfully' });
@@ -57,6 +65,12 @@ exports.getUserOrders = async (req, res) => {
     try {
         const pool = await getPool();
         const { userId } = req.params;
+
+        // Only allow requesting user's own orders (or admin - admin not implemented yet)
+        if (!req.user || String(req.user.id) !== String(userId)) {
+            return res.status(403).json({ error: 'Forbidden' });
+        }
+
         const [orders] = await pool.query(
             'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC',
             [userId]
@@ -76,6 +90,11 @@ exports.getOrderDetails = async (req, res) => {
 
         if (order.length === 0) {
             return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Ensure the requesting user owns the order (or is admin)
+        if (!req.user || String(req.user.id) !== String(order[0].user_id)) {
+            return res.status(403).json({ error: 'Forbidden' });
         }
 
         const [items] = await pool.query(

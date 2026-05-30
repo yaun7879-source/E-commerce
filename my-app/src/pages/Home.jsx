@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../utils/api';
 
 const Home = () => {
+    const authContext = useAuth();
+    const user = authContext?.user || null;
     const [currentSlide, setCurrentSlide] = useState(0);
     const [bestsellerSlide, setBestsellerSlide] = useState(0);
     const [activeMood, setActiveMood] = useState(null);
@@ -11,6 +15,8 @@ const Home = () => {
     const [showAllReviews, setShowAllReviews] = useState(false);
     const [allReviews, setAllReviews] = useState([]);
     const [loadingAllReviews, setLoadingAllReviews] = useState(false);
+    const [addingToCart, setAddingToCart] = useState(false);
+    const [cartMessage, setCartMessage] = useState('');
     const videoRef = useRef(null);
     const bsTimerRef = useRef(null);
 
@@ -37,11 +43,11 @@ const Home = () => {
     };
 
     const bestsellers = [
-        { name: 'Rose Heart Tealights', desc: 'Set of 9 — Perfect for romantic & festive settings', img: images.prod11, price: '₹349', tag: 'Trending', category: 'Tealights' },
-        { name: 'Crystal LED Tealights', desc: 'Set of 6 — Safe, smokeless & long-lasting glow', img: images.prod10, price: '₹699', tag: 'Diwali Pick', category: 'Tealights' },
-        { name: 'Mahasu Frankincense Jar', desc: '8-hour burn time — Smokeless & clean fragrance', img: images.prod5, price: '₹599', tag: '8 Hr Burn', category: 'Jar Candles' },
-        { name: '"Love" Rose Carved Candle Duo', desc: 'Artisan carved pillar — Ivory & red set', img: images.prod2, price: '₹1199', tag: 'Bestseller', category: 'Pillar Candles' },
-        { name: 'Bubble Heart Candle', desc: 'Luxury artisan cube — Red & ivory handcrafted pair', img: images.prod3, price: '₹849', tag: 'Artisan', category: 'Luxury' },
+        { id: 1, name: 'Rose Heart Tealights', desc: 'Set of 9 — Perfect for romantic & festive settings', img: images.prod4, price: '₹349', tag: 'Trending', category: 'Tealights' },
+        { id: 2, name: 'Crystal LED Tealights', desc: 'Set of 6 — Safe, smokeless & long-lasting glow', img: images.hero3, price: '₹699', tag: 'Diwali Pick', category: 'Tealights' },
+        { id: 3, name: 'Mahasu Frankincense Jar', desc: '8-hour burn time — Smokeless & clean fragrance', img: images.story, price: '₹599', tag: '8 Hr Burn', category: 'Jar Candles' },
+        { id: 4, name: 'Love Pillar Rose  Candle Duo', desc: 'Artisan carved pillar — Ivory & red set', img: images.prod6, price: '₹1199', tag: 'Bestseller', category: 'Pillar Candles' },
+        { id: 5, name: 'Bubble Heart Candle', desc: 'Luxury artisan cube — Red & ivory handcrafted pair', img: images.prod14, price: '₹849', tag: 'Artisan', category: 'Luxury' },
     ];
 
     const signatureScents = [
@@ -53,10 +59,10 @@ const Home = () => {
     ];
 
     const moodCategories = [
-        { mood: 'Romantic', emoji: '🌹', desc: 'Soft, warm & intimate', color: '#c0392b', gradient: 'linear-gradient(135deg,#c0392b22,#e8a0a022)', border: '#c0392b40', shopCategory: 'Tealights', image: images.prod6, products: ['Rose Heart Tealights', '"Love" Rose Carved Candle Duo', 'Romantic Rose Gift Set'], count: 3 },
+        { mood: 'Romantic', emoji: '🌹', desc: 'Soft, warm & intimate', color: '#c0392b', gradient: 'linear-gradient(135deg,#c0392b22,#e8a0a022)', border: '#c0392b40', shopCategory: 'Tealights', image: images.prod6, products: ['Rose Frangrance', '"Love" Rose Carved Candle Duo', 'Romantic Rose Gift Set'], count: 3 },
         { mood: 'Festive', emoji: '✨', desc: 'Bright, joyful & celebratory', color: '#c9a96e', gradient: 'linear-gradient(135deg,#c9a96e22,#f5e6c822)', border: '#c9a96e50', shopCategory: 'Tealights', image: images.hero3, products: ['Crystal LED Tealights', 'Diwali Candle Gift Box', 'Rainbow Gel Candle Set'], count: 3 },
         { mood: 'Relaxation', emoji: '🧘', desc: 'Calm, soothing & peaceful', color: '#5a8a72', gradient: 'linear-gradient(135deg,#5a8a7222,#a8d5bf22)', border: '#5a8a7240', shopCategory: 'Jar Candles', image: images.prod15, products: ['Mahasu Lavender Vanilla Jar', 'French Lavender Pillar', 'Mahasu Sandalwood Jar'], count: 3 },
-        { mood: 'Devotion', emoji: '🪔', desc: 'Sacred, spiritual & pure', color: '#e67e22', gradient: 'linear-gradient(135deg,#e67e2222,#fde9ca22)', border: '#e67e2240', shopCategory: 'Pillar Candles', image: images.prod12, products: ['Rose Carved Pillar Duo', '"Love" Rose Carved Duo', 'Diwali Candle Gift Box'], count: 3 },
+        { mood: 'Devotion', emoji: '🪔', desc: 'Sacred, spiritual & pure', color: '#e67e22', gradient: 'linear-gradient(135deg,#e67e2222,#fde9ca22)', border: '#e67e2240', shopCategory: 'Pillar Candles', image: images.prod12, products: ['Beautiful design', 'Smokeless', 'Best for praying'], count: 3 },
         { mood: 'Luxury', emoji: '👑', desc: 'Opulent, rich & artisan', color: '#7d3c98', gradient: 'linear-gradient(135deg,#7d3c9822,#d7bde222)', border: '#7d3c9840', shopCategory: 'Luxury', image: images.prod14, products: ['Bubble Heart Candle — Red', 'Bubble Heart Candle — Ivory', 'Mahasu Frankincense Jar'], count: 3 },
         { mood: 'Gifting', emoji: '🎁', desc: 'Curated, elegant & special', color: '#2471a3', gradient: 'linear-gradient(135deg,#2471a322,#aed6f122)', border: '#2471a340', shopCategory: 'Gift Sets', image: images.prod1, products: ['Diwali Candle Gift Box', 'Romantic Rose Gift Set', 'Mahasu Scented Jar Set'], count: 2 },
     ];
@@ -97,8 +103,52 @@ const Home = () => {
     const closeVideo = () => {
         if (videoRef.current) {
             videoRef.current.pause();
+            videoRef.current.currentTime = 0;
         }
         setShowVideo(false);
+    };
+
+    useEffect(() => {
+        if (!showVideo || !videoRef.current) return;
+        const video = videoRef.current;
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.then === 'function') {
+            playPromise.catch(() => {
+                // Autoplay may be blocked by the browser, but the video controls will still allow manual playback.
+            });
+        }
+    }, [showVideo]);
+
+    const handleAddToCart = async (productId, productName) => {
+        if (!user) {
+            setCartMessage('Please log in to add items to cart');
+            setTimeout(() => setCartMessage(''), 3000);
+            return;
+        }
+
+        setAddingToCart(true);
+        try {
+            const response = await apiFetch('/cart/add', {
+                method: 'POST',
+                body: JSON.stringify({
+                    productId,
+                    quantity: 1,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to add item to cart');
+            }
+
+            setCartMessage(`${productName} added to cart!`);
+            setTimeout(() => setCartMessage(''), 2500);
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            setCartMessage('Error adding to cart. Please try again.');
+            setTimeout(() => setCartMessage(''), 3000);
+        } finally {
+            setAddingToCart(false);
+        }
     };
 
     const formatReviewDate = (value) => {
@@ -675,9 +725,9 @@ const Home = () => {
 
                 .video-modal-inner {
                     position: relative;
-                    width: 100%;
-                    max-width: 85vw;
+                    width: min(95vw, 1200px);
                     max-height: 85vh;
+                    aspect-ratio: 16 / 9;
                     animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
                 }
 
@@ -710,8 +760,8 @@ const Home = () => {
 
                 .video-modal-inner video {
                     width: 100%;
-                    height: auto;
-                    max-height: calc(85vh - 50px);
+                    height: 100%;
+                    object-fit: cover;
                     border-radius: 12px;
                     display: block;
                     box-shadow: 0 20px 60px rgba(0,0,0,0.8);
@@ -847,6 +897,23 @@ const Home = () => {
 
             {/* ── HERO ── */}
             <section className="hero">
+                {cartMessage && (
+                    <div style={{
+                        position: 'fixed',
+                        top: '20px',
+                        right: '20px',
+                        background: cartMessage.includes('Error') ? '#c0392b' : '#27ae60',
+                        color: '#fff',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        zIndex: 10000,
+                        fontFamily: "'DM Sans', sans-serif",
+                        fontSize: '0.9rem',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                    }}>
+                        {cartMessage}
+                    </div>
+                )}
                 <div className="hero-left">
                     <p className="hero-tag">✦ New Collection</p>
                     <h1 className="hero-h1">
@@ -996,7 +1063,13 @@ const Home = () => {
                                     <p className="bs-desc">{item.desc}</p>
                                     <div className="bs-price">{item.price}</div>
                                     <div className="bs-action-row">
-                                        <button className="bs-add-btn">🛒 Add to Cart</button>
+                                        <button
+                                            className="bs-add-btn"
+                                            onClick={() => handleAddToCart(item.id, item.name)}
+                                            disabled={addingToCart}
+                                        >
+                                            🛒 {addingToCart ? 'Adding...' : 'Add to Cart'}
+                                        </button>
                                         <Link to="/shop" style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '0.78rem', color: 'var(--gold-dark,#a07840)', textDecoration: 'none', letterSpacing: '0.04em' }}>
                                             View all →
                                         </Link>
@@ -1112,6 +1185,8 @@ const Home = () => {
                             ref={videoRef}
                             controls
                             controlsList="nodownload"
+                            autoPlay
+                            playsInline
                         >
                             <source src="/videos/Mahasu_Video.mp4" type="video/mp4" />
                             <source src="/videos/Mahasu_Video.webm" type="video/webm" />
