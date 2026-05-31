@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../utils/api';
 import products from '../data/products';
 
 const Product = ({ addToCart }) => {
     const { id } = useParams();
+    const { token: authToken } = useAuth();
     const product = products.find((item) => item.id === Number(id));
     const [imageLoaded, setImageLoaded] = useState(false);
     const [quantity, setQuantity] = useState(1);
@@ -20,7 +23,7 @@ const Product = ({ addToCart }) => {
 
     const loadReviewSummary = async () => {
         try {
-            const response = await fetch('/api/reviews/summary');
+            const response = await fetch(`${API_BASE_URL}/reviews/summary`);
             if (!response.ok) {
                 setReviewSummary([]);
                 return;
@@ -36,7 +39,7 @@ const Product = ({ addToCart }) => {
     useEffect(() => {
         const loadReviews = async () => {
             try {
-                const response = await fetch(`/api/reviews/product/${id}`);
+                const response = await fetch(`${API_BASE_URL}/reviews/product/${id}`);
                 if (!response.ok) {
                     setReviews([]);
                     return;
@@ -80,23 +83,44 @@ const Product = ({ addToCart }) => {
             return;
         }
 
+        if (!authToken) {
+            setReviewError('Please sign in to post a review.');
+            return;
+        }
+
         setReviewError('');
         setReviewSubmitting(true);
 
+        const parseJsonSafely = async (response) => {
+            const text = await response.text();
+            if (!text) return null;
+            try {
+                return JSON.parse(text);
+            } catch {
+                return null;
+            }
+        };
+
         try {
-            const response = await fetch(`/api/reviews/product/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/reviews/product/${id}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+                },
                 body: JSON.stringify(newReview),
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Unable to submit review');
+                const errorData = await parseJsonSafely(response);
+                throw new Error(errorData?.error || 'Unable to submit review');
             }
 
-            const savedReview = await response.json();
-            setReviews((current) => [savedReview, ...current]);
+            const savedReview = await parseJsonSafely(response);
+            if (savedReview) {
+                setReviews((current) => [savedReview, ...current]);
+            }
             setNewReview({ name: '', rating: 5, comment: '' });
             await loadReviewSummary();
         } catch (error) {

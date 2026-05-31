@@ -145,7 +145,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/users/forgot-password`, {
                 method: 'POST',
-                credentials: 'include',  // ✅ Include credentials
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: resetEmail }),
             });
@@ -172,7 +172,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/users/reset-password`, {
                 method: 'POST',
-                credentials: 'include',  // ✅ Include credentials
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: resetToken, password: resetPassword }),
             });
@@ -213,7 +213,6 @@ const EnhancedAuthPage = ({ onLogin }) => {
         window.location.href = authRoute;
     };
 
-    // Auto-clear success message and enable scroll after 2 seconds
     useEffect(() => {
         if (authMessage && !authError) {
             const timer = setTimeout(() => {
@@ -228,7 +227,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/users/${endpoint}`, {
                 method: 'POST',
-                credentials: 'include',  // ✅ Include credentials for cross-origin requests
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
@@ -391,10 +390,10 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-ornament { display:flex; align-items:center; justify-content:center; gap:0.8rem; margin-top:1.5rem; opacity:0.2; }
                 .eau-orn-line { width:40px; height:1px; background:#c9a961; }
                 .eau-orn-txt { font-size:0.5rem; color:#a82f2f; letter-spacing:0.2em; }
-                .eau-overlay-lock { position:fixed; inset:0; background:rgba(10,8,5,0.3); backdrop-filter:blur(2px); z-index:100; pointer-events:none; opacity:0; animation:overlayFade 0.3s ease forwards; }
-                @keyframes overlayFade { to { opacity:1; } }
+                .eau-overlay-lock { position:fixed; inset:0; background:transparent; backdrop-filter:none; z-index:100; pointer-events:none; opacity:0; }
                 .eau-success-glow { position:fixed; inset:0; background:radial-gradient(circle at center,rgba(111,163,137,0.15) 0%,transparent 70%); z-index:5; pointer-events:none; animation:successPulse 0.6s ease out; }
                 @keyframes successPulse { 0%{opacity:1;} 100%{opacity:0;} }
+                @keyframes slideIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
                 @media(max-width:900px){.eau-left{display:none;}.eau-right{width:100%;backdrop-filter:blur(20px);}.eau-mobile-brand{display:block;}}
                 @media(max-width:520px){.eau-form{padding:1.6rem 1.4rem 2rem;}.eau-name-row{grid-template-columns:1fr;}}
             `}</style>
@@ -403,7 +402,86 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 <div className="eau-bg-base" />
                 <div className="eau-glow-rose" />
 
-                {(authLoading || authMessage || authError) && <div className="eau-overlay-lock" />}
+                {/* ✅ FIXED: No blur overlay - just toast notifications instead */}
+                {authLoading && (
+                    <div style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        zIndex: 101,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        padding: '12px 20px',
+                        background: 'rgba(10, 8, 5, 0.9)',
+                        border: '1px solid rgba(201, 169, 97, 0.4)',
+                        borderRadius: '50px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        animation: 'slideIn 0.3s ease forwards',
+                    }}>
+                        <div style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: '#d4b574',
+                            animation: 'pulse 1.5s ease-in-out infinite',
+                        }}></div>
+                        <span style={{
+                            fontFamily: "'Cormorant Garamond', serif",
+                            fontSize: '0.85rem',
+                            color: '#d4b574',
+                            letterSpacing: '0.05em',
+                        }}>Processing...</span>
+                    </div>
+                )}
+
+                {/* Success message toast */}
+                {authMessage && !authError && (
+                    <div style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        zIndex: 101,
+                        padding: '12px 20px',
+                        background: 'rgba(80, 130, 100, 0.9)',
+                        border: '1px solid rgba(80, 130, 100, 0.5)',
+                        borderRadius: '50px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        color: '#8fd9a8',
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: '0.9rem',
+                        letterSpacing: '0.02em',
+                        animation: 'slideIn 0.3s ease forwards',
+                    }}>
+                        ✓ {authMessage}
+                    </div>
+                )}
+
+                {/* Error message toast */}
+                {authError && (
+                    <div style={{
+                        position: 'fixed',
+                        bottom: '20px',
+                        right: '20px',
+                        zIndex: 101,
+                        padding: '12px 20px',
+                        background: 'rgba(168, 47, 47, 0.9)',
+                        border: '1px solid rgba(168, 47, 47, 0.5)',
+                        borderRadius: '50px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        color: '#ff9090',
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: '0.9rem',
+                        letterSpacing: '0.02em',
+                        animation: 'slideIn 0.3s ease forwards',
+                    }}>
+                        ⚠ {authError}
+                    </div>
+                )}
+
                 {authMessage && !authError && <div className="eau-success-glow" />}
 
                 {particles.map(p => (
@@ -541,8 +619,6 @@ const EnhancedAuthPage = ({ onLogin }) => {
                                         </button>
                                     </div>
                                 )}
-                                {authError && <div className="eau-msg err">⚠ {authError}</div>}
-                                {authMessage && <div className="eau-msg ok">✓ {authMessage}</div>}
                                 <button className="eau-submit" type="button" onClick={handleLogin} disabled={authLoading}>
                                     <div className="eau-submit-inner">{authLoading ? <><span className="eau-spin" />Signing in...</> : <>Sign In to Mahasu<span className="eau-arr">→</span></>}</div>
                                 </button>
@@ -593,8 +669,6 @@ const EnhancedAuthPage = ({ onLogin }) => {
                                         {strengthMeta && <div className="eau-str-lbl" style={{ color: strengthMeta.color }}>{strengthMeta.label}</div>}
                                     </div>
                                 )}
-                                {authError && <div className="eau-msg err">⚠ {authError}</div>}
-                                {authMessage && <div className="eau-msg ok">✓ {authMessage}</div>}
                                 <button className="eau-submit" type="button" onClick={handleSignup} disabled={authLoading}>
                                     <div className="eau-submit-inner">{authLoading ? <><span className="eau-spin" />Creating account...</> : <>Create My Account<span className="eau-arr">→</span></>}</div>
                                 </button>
