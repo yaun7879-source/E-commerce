@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
+import { API_BASE_URL } from './utils/api';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
@@ -66,7 +67,8 @@ function App() {
   const loadCart = async () => {
     if (!authToken || !authUser) return;
     try {
-      const response = await fetch('/api/cart', {
+      const response = await fetch(`${API_BASE_URL}/cart`, {
+        credentials: 'include',
         headers: {
           ...authHeaders,
         },
@@ -117,8 +119,9 @@ function App() {
       address_id: addressId,
     };
 
-    const response = await fetch('/api/payment/verify', {
+    const response = await fetch(`${API_BASE_URL}/payment/verify`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...authHeaders,
