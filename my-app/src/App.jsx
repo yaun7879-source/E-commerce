@@ -221,6 +221,39 @@ function App() {
     return () => document.removeEventListener('mousedown', handle);
   }, []);
 
+  // Handle OAuth callback from login page
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id');
+    const email = params.get('email');
+    const firstName = params.get('first_name');
+    const lastName = params.get('last_name');
+
+    if (id && email) {
+      // User coming from OAuth callback
+      const userData = {
+        id: parseInt(id),
+        email,
+        first_name: firstName || '',
+        last_name: lastName || '',
+      };
+
+      // Token is set in HttpOnly cookie by backend, fetch it
+      authLogin(userData);
+      setAuthUser(userData);
+      localStorage.setItem('authUser', JSON.stringify(userData));
+
+      // Clear query parameters from URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Redirect to home after successful login
+      setTimeout(() => {
+        navigate('/');
+        showToast(`Welcome back, ${firstName || 'User'}!`);
+      }, 500);
+    }
+  }, [navigate]);
+
   useEffect(() => {
     if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 80);
     else { setSearchQuery(''); setSearchResults([]); }

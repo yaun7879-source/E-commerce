@@ -9,8 +9,14 @@ const getApiBaseUrl = () => {
         return import.meta.env.VITE_API_URL;
     }
 
-    // In production (built app), use relative path to current domain
+    // In production (built app), use Railway backend URL or fall back to relative path
     if (import.meta.env.PROD) {
+        // In Vercel production, this should be set via environment variable
+        // If not set, it will use relative path (which may not work for OAuth)
+        const railwayUrl = import.meta.env.VITE_RAILWAY_API_URL;
+        if (railwayUrl) {
+            return railwayUrl;
+        }
         return '/api';
     }
 

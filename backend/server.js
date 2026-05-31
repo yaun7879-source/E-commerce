@@ -79,29 +79,28 @@ const corsOptions = {
     origin: function (origin, callback) {
         // Allow requests with no origin (e.g., mobile apps, curl, native apps)
         if (!origin) return callback(null, true);
-        
+
         // Check if origin is in allowed list
         if (allowedOrigins.indexOf(origin) !== -1) {
             return callback(null, true);
         }
-        
+
         // Allow any Vercel deployment domain (more flexible)
         if (origin && origin.includes('vercel.app')) {
             return callback(null, true);
         }
-        
+
         // Allow localhost variants for development
         if (origin && origin.includes('localhost')) {
             return callback(null, true);
         }
-        
+
         console.warn(`⚠️ CORS blocked origin: ${origin}`);
         return callback(new Error('CORS policy: This origin is not allowed'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
-};
 };
 
 app.use(cors(corsOptions));
