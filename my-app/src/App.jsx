@@ -24,7 +24,7 @@ function App() {
   const searchInputRef = useRef(null);
 
   // ── Auth state ──
-  
+
 
   // ── Cart state ──
   const [cartItems, setCartItems] = useState([]);
@@ -141,8 +141,9 @@ function App() {
     setPaymentLoading(true);
 
     try {
-      const createResponse = await fetch('/api/payment/create-order', {
+      const createResponse = await fetch(`${API_BASE_URL}/payment/create-order`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
@@ -283,8 +284,9 @@ function App() {
         throw new Error('Invalid product ID');
       }
 
-      const response = await fetch('/api/cart/add', {
+      const response = await fetch(`${API_BASE_URL}/cart/add`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...authHeaders,
@@ -318,8 +320,9 @@ function App() {
     }
 
     try {
-      const response = await fetch(`/api/cart/${cartItemId}`, {
+      const response = await fetch(`${API_BASE_URL}/cart/${cartItemId}`, {
         method: 'DELETE',
+        credentials: 'include',
         headers: { ...getAuthHeaders() },
       });
       if (response.status === 401) {
@@ -350,8 +353,9 @@ function App() {
     }
 
     try {
-      const response = await fetch('/api/cart/update', {
+      const response = await fetch(`${API_BASE_URL}/cart/update`, {
         method: 'PUT',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
