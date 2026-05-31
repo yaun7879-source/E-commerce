@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 
 const formatAddress = (address) => {
     if (!address) return '';
@@ -56,7 +57,10 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
     const loadAddresses = async () => {
         if (!authToken) return;
         try {
-            const res = await fetch('/api/addresses', { headers: { ...authHeaders } });
+            const res = await fetch(`${API_BASE_URL}/addresses`, {
+                credentials: 'include',
+                headers: { ...authHeaders },
+            });
             if (!res.ok) throw new Error('Unable to load saved addresses');
             const data = await res.json();
             setAddresses(data);
@@ -81,8 +85,9 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await fetch('/api/addresses', {
+            const response = await fetch(`${API_BASE_URL}/addresses`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: { 'Content-Type': 'application/json', ...authHeaders },
                 body: JSON.stringify(form),
             });
@@ -214,7 +219,7 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
                                 </div>
                             </div>
                             <div className="co-card__body">
-                                <form className="co-form" onSubmit={handleAddAddress}>
+                                <form className="co-form" onSubmit={handleAddAddress} noValidate>
                                     <div className="co-form__row">
                                         <div className="co-field">
                                             <label className="co-field__label">Address Label</label>
