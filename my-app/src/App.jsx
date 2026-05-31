@@ -217,19 +217,19 @@ function App() {
     const params = new URLSearchParams(window.location.search);
     const id = params.get('id');
     const email = params.get('email');
+    const token = params.get('token');
     const firstName = params.get('first_name');
     const lastName = params.get('last_name');
 
     if (id && email) {
       // User coming from OAuth callback
       const userData = {
-        id: parseInt(id),
+        id: id ? parseInt(id) : null,
         email,
         first_name: firstName || '',
         last_name: lastName || '',
       };
 
-      // Token is set in HttpOnly cookie by backend, fetch it
       authLogin(userData, token);
 
       // Clear query parameters from URL
@@ -289,7 +289,7 @@ function App() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ productId, quantity: 1 }),
       });
