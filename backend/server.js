@@ -3,11 +3,12 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const createSecurity = require('./middleware/security');
 const { errorHandler } = require('./middleware/errorHandler');
 const { morganMiddleware } = require('./middleware/logger');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-const { initializeDatabase } = require('./config/schema');
+const { initializeDatabase, getPool } = require('./config/schema');
 const passport = require('./config/passport');
 
 // Validate required environment variables
@@ -61,7 +62,9 @@ app.use(morganMiddleware);
 const allowedOrigins = [
     'http://localhost:3000',      // Local frontend
     'http://localhost:5173',      // Vite dev server
-    process.env.FRONTEND_URL,     // Production frontend URL
+    'http://localhost',           // Local production
+    'https://e-commerce-k5cv-m7fp1qxbt-yaun7879-sources-projects.vercel.app',  // Vercel production
+    process.env.FRONTEND_URL,     // Production frontend URL (from env)
 ].filter(Boolean);
 
 const corsOptions = {
@@ -88,7 +91,28 @@ if (!sessionSecret) {
     throw new Error('SESSION_SECRET environment variable is required');
 }
 
+// Use MySQL session store in production, memory store in development
+let sessionStore;
+if (process.env.NODE_ENV === 'production') {
+    const { config } = require('./config/db');
+    sessionStore = new MySQLStore({
+        host: config.host,
+        user: config.user,
+        password: config.password,
+        database: config.database,
+        port: config.port,
+        clearExpired: true,
+        expiration: 24 * 60 * 60 * 1000, // 24 hours
+        createDatabaseTable: true,
+        charset: 'utf8mb4_bin'
+    });
+} else {
+    // Use memory store for development (with warning)
+    sessionStore = new session.MemoryStore();
+}
+
 app.use(session({
+    store: sessionStore,
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
@@ -117,6 +141,28 @@ app.use(passport.session());
         }
     }
 })();
+
+// Root route - API information
+app.get('/', (req, res) => {
+    res.status(200).json({
+        message: 'Mahasu E-Commerce API Server',
+        version: '1.0.0',
+        status: 'running',
+        endpoints: {
+            health: '/api/health',
+            products: '/api/products',
+            users: '/api/users',
+            orders: '/api/orders',
+            cart: '/api/cart',
+            payment: '/api/payment',
+            addresses: '/api/addresses',
+            reviews: '/api/reviews',
+            auth: '/api/auth'
+        },
+        frontend: process.env.FRONTEND_URL || 'Not configured',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Routes
 app.use('/api/products', productRoutes);
