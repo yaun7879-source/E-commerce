@@ -11,11 +11,9 @@ import AuthPage from './pages/AuthPage';
 import Checkout from './pages/Checkout';
 import products from './data/products';
 import './App.css';
-
 const catalog = products;
-
 function App() {
-  const { login: authLogin, logout: authLogout } = useAuth();
+  const { user: authUser, token: authToken, login: authLogin, logout: authLogout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Search state ──
@@ -26,15 +24,7 @@ function App() {
   const searchInputRef = useRef(null);
 
   // ── Auth state ──
-  const [authUser, setAuthUser] = useState(() => {
-    try {
-      const stored = localStorage.getItem('authUser');
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [authToken, setAuthToken] = useState(() => localStorage.getItem('authToken') || '');
+  
 
   // ── Cart state ──
   const [cartItems, setCartItems] = useState([]);
@@ -49,13 +39,12 @@ function App() {
   const totalItems = cartItems.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('authToken');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
 
   const clearAuth = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('authUser');
-    setAuthToken('');
-    setAuthUser(null);
     authLogout();
   };
 
@@ -69,9 +58,7 @@ function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/cart`, {
         credentials: 'include',
-        headers: {
-          ...authHeaders,
-        },
+        headers: { ...getAuthHeaders() },
       });
       if (response.status === 401) {
         handleUnauthorized();
@@ -124,7 +111,7 @@ function App() {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,
+        ...getAuthHeaders(),
       },
       body: JSON.stringify(payload),
     });
@@ -158,7 +145,7 @@ function App() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ total_amount: cartTotal, currency: 'INR' }),
       });
@@ -242,9 +229,7 @@ function App() {
       };
 
       // Token is set in HttpOnly cookie by backend, fetch it
-      authLogin(userData);
-      setAuthUser(userData);
-      localStorage.setItem('authUser', JSON.stringify(userData));
+      authLogin(userData, token);
 
       // Clear query parameters from URL
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -283,8 +268,6 @@ function App() {
   };
 
   const handleLogin = (user, token) => {
-    setAuthUser(user);
-    setAuthToken(token);
     authLogin(user, token);
   };
 
@@ -337,9 +320,7 @@ function App() {
     try {
       const response = await fetch(`/api/cart/${cartItemId}`, {
         method: 'DELETE',
-        headers: {
-          ...authHeaders,
-        },
+        headers: { ...getAuthHeaders() },
       });
       if (response.status === 401) {
         handleUnauthorized();
@@ -373,7 +354,7 @@ function App() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          ...authHeaders,
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({ cartItemId, quantity: newQuantity }),
       });
