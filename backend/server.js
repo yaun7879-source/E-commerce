@@ -3,7 +3,16 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
+
+// Try to load MySQL session store, fall back to memory store
+let MySQLStore;
+try {
+    MySQLStore = require('express-mysql-session')(session);
+} catch (err) {
+    console.warn('⚠️  express-mysql-session not available, using MemoryStore');
+    MySQLStore = null;
+}
+
 const createSecurity = require('./middleware/security');
 const { errorHandler } = require('./middleware/errorHandler');
 const { morganMiddleware } = require('./middleware/logger');
@@ -91,24 +100,35 @@ if (!sessionSecret) {
     throw new Error('SESSION_SECRET environment variable is required');
 }
 
-// Use MySQL session store in production, memory store in development
+// Use MySQL session store in production (if available), memory store otherwise
 let sessionStore;
-if (process.env.NODE_ENV === 'production') {
-    const { config } = require('./config/db');
-    sessionStore = new MySQLStore({
-        host: config.host,
-        user: config.user,
-        password: config.password,
-        database: config.database,
-        port: config.port,
-        clearExpired: true,
-        expiration: 24 * 60 * 60 * 1000, // 24 hours
-        createDatabaseTable: true,
-        charset: 'utf8mb4_bin'
-    });
+if (process.env.NODE_ENV === 'production' && MySQLStore) {
+    try {
+        const { config } = require('./config/db');
+        sessionStore = new MySQLStore({
+            host: config.host,
+            user: config.user,
+            password: config.password,
+            database: config.database,
+            port: config.port,
+            clearExpired: true,
+            expiration: 24 * 60 * 60 * 1000,
+            createDatabaseTable: true,
+            charset: 'utf8mb4_bin'
+        });
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ MySQL session store initialized');
+        }
+    } catch (err) {
+        console.warn('⚠️  Could not initialize MySQL session store:', err.message);
+        sessionStore = new session.MemoryStore();
+    }
 } else {
-    // Use memory store for development (with warning)
+    // Use memory store for development or if MySQL store unavailable
     sessionStore = new session.MemoryStore();
+    if (process.env.NODE_ENV === 'production') {
+        console.warn('⚠️  Using MemoryStore in production - install express-mysql-session for production-ready session management');
+    }
 }
 
 app.use(session({
