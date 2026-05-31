@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../utils/api';
 
 const EnhancedAuthPage = ({ onLogin }) => {
     const [tab, setTab] = useState('login');
@@ -142,7 +143,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         setResetMessage('');
 
         try {
-            const res = await fetch('/api/users/forgot-password', {
+            const res = await fetch(`${API_BASE_URL}/users/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: resetEmail }),
@@ -168,7 +169,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         setResetMessage('');
 
         try {
-            const res = await fetch('/api/users/reset-password', {
+            const res = await fetch(`${API_BASE_URL}/users/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: resetToken, password: resetPassword }),
@@ -197,8 +198,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
 
     const handleSocialLogin = (provider) => {
         const providerRoutes = {
-            Google: '/api/auth/google',
-            Facebook: '/api/auth/facebook'
+            Google: `${API_BASE_URL}/auth/google`,
+            Facebook: `${API_BASE_URL}/auth/facebook`
         };
         const authRoute = providerRoutes[provider];
 
@@ -223,7 +224,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
     const requestUserAuth = async (endpoint, payload) => {
         setAuthLoading(true); setAuthError(''); setAuthMessage('');
         try {
-            const res = await fetch('/api/users/' + endpoint, {
+            const res = await fetch(`${API_BASE_URL}/users/${endpoint}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
