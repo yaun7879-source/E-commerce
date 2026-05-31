@@ -72,22 +72,36 @@ const allowedOrigins = [
     'http://localhost:3000',      // Local frontend
     'http://localhost:5173',      // Vite dev server
     'http://localhost',           // Local production
-    'https://e-commerce-k5cv-m7fp1qxbt-yaun7879-sources-projects.vercel.app',  // Vercel production
     process.env.FRONTEND_URL,     // Production frontend URL (from env)
 ].filter(Boolean);
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (e.g., mobile apps, curl)
+        // Allow requests with no origin (e.g., mobile apps, curl, native apps)
         if (!origin) return callback(null, true);
+        
+        // Check if origin is in allowed list
         if (allowedOrigins.indexOf(origin) !== -1) {
             return callback(null, true);
         }
+        
+        // Allow any Vercel deployment domain (more flexible)
+        if (origin && origin.includes('vercel.app')) {
+            return callback(null, true);
+        }
+        
+        // Allow localhost variants for development
+        if (origin && origin.includes('localhost')) {
+            return callback(null, true);
+        }
+        
+        console.warn(`⚠️ CORS blocked origin: ${origin}`);
         return callback(new Error('CORS policy: This origin is not allowed'));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+};
 };
 
 app.use(cors(corsOptions));
