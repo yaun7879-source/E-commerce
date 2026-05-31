@@ -9,15 +9,11 @@ const getApiBaseUrl = () => {
         return import.meta.env.VITE_API_URL;
     }
 
-    // In production (built app), use Railway backend URL or fall back to relative path
+    // In production (built app), use Railway backend URL
     if (import.meta.env.PROD) {
-        // In Vercel production, this should be set via environment variable
-        // If not set, it will use relative path (which may not work for OAuth)
-        const railwayUrl = import.meta.env.VITE_RAILWAY_API_URL;
-        if (railwayUrl) {
-            return railwayUrl;
-        }
-        return '/api';
+        // Production must use full URL for cross-origin requests
+        // Default to Railway production backend
+        return 'https://e-commerce-production-1f1f.up.railway.app/api';
     }
 
     // In development, use localhost with Vite proxy
@@ -27,7 +23,7 @@ const getApiBaseUrl = () => {
 export const API_BASE_URL = getApiBaseUrl();
 
 /**
- * Make authenticated fetch request
+ * Make authenticated fetch request with proper CORS credentials
  * @param {string} endpoint - API endpoint (e.g., '/cart/add')
  * @param {object} options - Fetch options
  * @returns {Promise<Response>}
@@ -45,8 +41,10 @@ export const apiFetch = async (endpoint, options = {}) => {
         headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // IMPORTANT: credentials must be 'include' for cross-origin requests with Authorization header
     return fetch(url, {
         ...options,
+        credentials: 'include',  // ✅ Allow cookies and credentials
         headers,
     });
 };

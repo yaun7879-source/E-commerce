@@ -61,13 +61,8 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-// Apply security helpers (helmet, rate-limit, xss-clean, cookie-parser)
-createSecurity(app);
-
-// Request logging
-app.use(morganMiddleware);
-
 // CORS Configuration - Allow multiple origins for OAuth callback
+// IMPORTANT: CORS must be applied BEFORE security headers
 const allowedOrigins = [
     'http://localhost:3000',      // Local frontend
     'http://localhost:5173',      // Vite dev server
@@ -100,12 +95,24 @@ const corsOptions = {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+    exposedHeaders: ['X-Total-Count', 'X-Page-Count', 'Authorization'],
+    maxAge: 86400 // Cache preflight requests for 24 hours
 };
 
+// Apply CORS FIRST, before security headers
 app.use(cors(corsOptions));
+// Explicit preflight handler for all routes
+app.options('*', cors(corsOptions));
+
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
+
+// Apply security helpers AFTER CORS (helmet, rate-limit, xss-clean, cookie-parser)
+createSecurity(app);
+
+// Request logging
+app.use(morganMiddleware);
 
 // Session middleware for Passport
 const sessionSecret = process.env.SESSION_SECRET;

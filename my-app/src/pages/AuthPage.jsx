@@ -145,6 +145,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/users/forgot-password`, {
                 method: 'POST',
+                credentials: 'include',  // ✅ Include credentials
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: resetEmail }),
             });
@@ -171,6 +172,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
         try {
             const res = await fetch(`${API_BASE_URL}/users/reset-password`, {
                 method: 'POST',
+                credentials: 'include',  // ✅ Include credentials
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: resetToken, password: resetPassword }),
             });
@@ -225,7 +227,9 @@ const EnhancedAuthPage = ({ onLogin }) => {
         setAuthLoading(true); setAuthError(''); setAuthMessage('');
         try {
             const res = await fetch(`${API_BASE_URL}/users/${endpoint}`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST',
+                credentials: 'include',  // ✅ Include credentials for cross-origin requests
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
             const data = await res.json();

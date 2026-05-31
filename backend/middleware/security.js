@@ -6,8 +6,27 @@ const csurf = require('csurf');
 const cors = require('cors');
 
 const createSecurity = (app) => {
-    // Basic security headers
-    app.use(helmet());
+    // Basic security headers with cross-origin support
+    // IMPORTANT: These settings allow CORS to work properly
+    app.use(helmet({
+        crossOriginResourcePolicy: { policy: "cross-origin" },
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                connectSrc: [
+                    "'self'",
+                    "https://e-commerce-k5cv.vercel.app",
+                    "https://*.vercel.app",
+                    "https://e-commerce-production-1f1f.up.railway.app",
+                    "https://checkout.razorpay.com",
+                    "http://localhost:5173",
+                    "http://localhost:3000"
+                ],
+                scriptSrc: ["'self'", "https://checkout.razorpay.com"],
+                frameSrc: ["https://checkout.razorpay.com"]
+            }
+        }
+    }));
 
     // Body / query sanitization against XSS
     app.use(xss());
