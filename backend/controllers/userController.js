@@ -1,8 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { validationResult } = require('express-validator');
 const { getPool } = require('../config/db');
-
 const { sendMail } = require('../utils/mail');
 
 const sendPasswordResetEmail = async (email, token) => {
@@ -10,43 +10,49 @@ const sendPasswordResetEmail = async (email, token) => {
     await sendMail({
         to: email,
         subject: 'Password Reset Request',
-        html: `<p>You requested a password reset.</p><p>Click <a href="${resetUrl}">here</a> to reset your password, or copy and paste this URL into your browser:</p><p>${resetUrl}</p><p>If you did not request this, you can ignore this email.</p>`
+        html: `<p>You requested a password reset.</p>
+               <p>Click <a href="${resetUrl}">here</a> to reset your password.</p>
+               <p>If you did not request this, ignore this email.</p>`
     });
 };
 
-// Register user
 exports.registerUser = async (req, res) => {
     try {
-        const { email, password, first_name, last_name } = req.body;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array()[0].msg });
+        }
 
-        // Check if user exists
+        const { email, password, first_name, last_name } = req.body;
         const pool = await getPool();
         const [existing] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
             return res.status(400).json({ error: 'User already exists' });
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create user
         const [result] = await pool.query(
             'INSERT INTO users (email, password, first_name, last_name) VALUES (?, ?, ?, ?)',
             [email, hashedPassword, first_name, last_name]
         );
 
-        res.status(201).json({ message: 'User registered successfully', userId: result.insertId });
+        res.status(201).json({
+            message: 'User registered successfully',
+            userId: result.insertId
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Login user with account lockout protection
 exports.loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array()[0].msg });
+        }
 
-        // Find user
+        const { email, password } = req.body;
         const pool = await getPool();
         const [users] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
@@ -55,7 +61,6 @@ exports.loginUser = async (req, res) => {
 
         const user = users[0];
 
-        // Check if account is locked
         if (user.locked_until && new Date(user.locked_until) > new Date()) {
             const remainingTime = Math.ceil((new Date(user.locked_until) - new Date()) / 1000 / 60);
             return res.status(429).json({
@@ -63,22 +68,19 @@ exports.loginUser = async (req, res) => {
             });
         }
 
-        // Check password
         const isValidPassword = await bcrypt.compare(password, user.password);
         if (!isValidPassword) {
-            // Increment failed login attempts
             const newFailedAttempts = (user.failed_login_attempts || 0) + 1;
             let lockedUntil = null;
 
-            // Lock account after 5 failed attempts for 30 minutes
             if (newFailedAttempts >= 5) {
-                lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+                lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
                 await pool.query(
                     'UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?',
                     [newFailedAttempts, lockedUntil, user.id]
                 );
                 return res.status(429).json({
-                    error: 'Too many failed login attempts. Account locked for 30 minutes.'
+                    error: 'Too many failed attempts. Account locked for 30 minutes.'
                 });
             }
 
@@ -89,13 +91,11 @@ exports.loginUser = async (req, res) => {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
-        // Reset failed login attempts and locked_until on successful login
         await pool.query(
             'UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?',
             [user.id]
         );
 
-        // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, email: user.email, role: user.role || 'customer' },
             process.env.JWT_SECRET,
@@ -118,7 +118,6 @@ exports.loginUser = async (req, res) => {
     }
 };
 
-// Request password reset
 exports.requestPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
@@ -132,24 +131,22 @@ exports.requestPasswordReset = async (req, res) => {
         if (users.length > 0) {
             const resetToken = crypto.randomBytes(32).toString('hex');
             const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-            const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+            const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
 
             await pool.query(
                 'UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE email = ?',
                 [hashedToken, expiresAt, email]
             );
 
-            // Send reset email
             await sendPasswordResetEmail(email, resetToken);
         }
 
-        res.json({ message: 'If an account exists at that email, reset instructions were initiated.' });
+        res.json({ message: 'If an account exists at that email, reset instructions were sent.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Reset password using token
 exports.resetPassword = async (req, res) => {
     try {
         const { token, password } = req.body;
@@ -179,13 +176,12 @@ exports.resetPassword = async (req, res) => {
             [hashedPassword, user.id]
         );
 
-        res.json({ message: 'Password has been reset successfully. Please sign in with your new password.' });
+        res.json({ message: 'Password reset successfully. Please sign in.' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 };
 
-// Get user profile - authenticated endpoint (only can view own profile unless admin)
 exports.getUserProfile = async (req, res) => {
     try {
         const pool = await getPool();
@@ -193,12 +189,14 @@ exports.getUserProfile = async (req, res) => {
         const userId = req.user.id;
         const userRole = req.user.role;
 
-        // Authorization check: users can only view their own profile unless they're admin
         if (parseInt(id) !== userId && userRole !== 'admin') {
             return res.status(403).json({ error: 'Forbidden: You can only view your own profile' });
         }
 
-        const [users] = await pool.query('SELECT id, email, first_name, last_name, phone, address, city, zip_code FROM users WHERE id = ?', [id]);
+        const [users] = await pool.query(
+            'SELECT id, email, first_name, last_name, phone, address, city, zip_code FROM users WHERE id = ?',
+            [id]
+        );
 
         if (users.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -210,14 +208,17 @@ exports.getUserProfile = async (req, res) => {
     }
 };
 
-// Update user profile - must be own profile
 exports.updateUserProfile = async (req, res) => {
     try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ error: errors.array()[0].msg });
+        }
+
         const pool = await getPool();
         const { id } = req.params;
         const userId = req.user.id;
 
-        // Authorization check: users can only update their own profile
         if (parseInt(id) !== userId) {
             return res.status(403).json({ error: 'Forbidden: You can only update your own profile' });
         }

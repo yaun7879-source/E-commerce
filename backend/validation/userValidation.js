@@ -2,7 +2,11 @@
 const { body } = require('express-validator');
 
 // Strong password pattern: min 12 chars, at least 1 uppercase, 1 number, 1 special char
-const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{12,}$/;
+// ✅ Naya
+const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+body('password')
+    .isLength({ min: 8 })
 
 exports.registerValidation = [
     body('email')

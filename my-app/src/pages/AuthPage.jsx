@@ -100,7 +100,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
 
     const getStrength = (val) => {
         let s = 0;
-        if (val.length >= 8) s++;
+        if (val.length >= 12) s++;
         if (/[A-Z]/.test(val) && /[0-9]/.test(val)) s++;
         if (/[^A-Za-z0-9]/.test(val)) s++;
         return s;
@@ -251,6 +251,10 @@ const EnhancedAuthPage = ({ onLogin }) => {
     };
     const handleSignup = async () => {
         if (!signupFirstName || !signupLastName || !signupEmail || !signupPassword) { setAuthError('Please fill in all fields.'); return; }
+        if (signupPassword.length < 12) {
+            setAuthError('Password must be at least 12 characters');
+            return;
+        }
         await requestUserAuth('register', { first_name: signupFirstName, last_name: signupLastName, email: signupEmail, password: signupPassword });
     };
     const switchTab = (t) => { resetAuth(); closeForgotFlow(); setTab(t); };

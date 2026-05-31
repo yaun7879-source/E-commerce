@@ -212,7 +212,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/auth', app._authLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

@@ -1,17 +1,70 @@
-const { validationResult } = require('express-validator');
-const { registerValidation, loginValidation, profileUpdateValidation } = require('../validation/userValidation');
+const { body } = require('express-validator');
 
-const validate = (validations) => {
-    return async (req, res, next) => {
-        await Promise.all(validations.map((validation) => validation.run(req)));
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({ errors: errors.array() });
-        }
-        next();
-    };
-};
+const passwordPattern = /^(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-exports.registerValidator = validate(registerValidation);
-exports.loginValidator = validate(loginValidation);
-exports.profileUpdateValidator = validate(profileUpdateValidation);
+exports.registerValidation = [
+    body('email')
+        .isEmail()
+        .normalizeEmail()
+        .withMessage('Invalid email address'),
+    body('password')
+        .isLength({ min: 8 })
+        .withMessage('Password must be at least 8 characters')
+        .matches(passwordPattern)
+        .withMessage('Password must contain uppercase, number, and special character (@$!%*?&)'),
+    body('first_name')
+        .trim()
+        .notEmpty()
+        .withMessage('First name is required')
+        .isLength({ max: 100 })
+        .withMessage('First name must be less than 100 characters'),
+    body('last_name')
+        .trim()
+        .optional()
+        .isLength({ max: 100 })
+        .withMessage('Last name must be less than 100 characters'),
+];
+
+exports.loginValidation = [
+    body('email')
+        .isEmail()
+        .normalizeEmail()
+        .withMessage('Invalid email address'),
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required'),
+];
+
+exports.profileUpdateValidation = [
+    body('first_name')
+        .trim()
+        .optional()
+        .isLength({ min: 1, max: 100 })
+        .withMessage('First name must be 1-100 characters'),
+    body('last_name')
+        .trim()
+        .optional()
+        .isLength({ max: 100 })
+        .withMessage('Last name must be less than 100 characters'),
+    body('phone')
+        .trim()
+        .optional()
+        .matches(/^[0-9+\-\s()]*$/)
+        .isLength({ min: 7, max: 20 })
+        .withMessage('Invalid phone number format'),
+    body('address')
+        .trim()
+        .optional()
+        .isLength({ max: 500 })
+        .withMessage('Address must be less than 500 characters'),
+    body('city')
+        .trim()
+        .optional()
+        .isLength({ max: 100 })
+        .withMessage('City must be less than 100 characters'),
+    body('zip_code')
+        .trim()
+        .optional()
+        .matches(/^[0-9\s\-]{3,10}$/)
+        .withMessage('Invalid postal code format'),
+];
