@@ -24,8 +24,10 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks: (id) => {
+          if (['react', 'react-dom', 'react-router-dom'].some((pkg) => id.includes(`/node_modules/${pkg}/`))) {
+            return 'react-vendor';
+          }
         },
       },
     },
