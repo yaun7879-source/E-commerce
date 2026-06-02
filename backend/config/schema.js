@@ -292,6 +292,45 @@ const createCartTable = async () => {
     }
 };
 
+// Create Subscriptions Table
+const createSubscriptionsTable = async () => {
+    const query = `
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL UNIQUE,
+      email VARCHAR(255) NOT NULL,
+      discount_percentage INT DEFAULT 10,
+      is_active BOOLEAN DEFAULT TRUE,
+      discount_used_on_first_order BOOLEAN DEFAULT FALSE,
+      subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `;
+    try {
+        const pool = await getPool();
+        await pool.query(query);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Subscriptions table created/exists');
+        }
+        // Add column if it doesn't exist (for existing databases)
+        const checkColumnQuery = `
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_NAME = 'subscriptions' AND COLUMN_NAME = 'discount_used_on_first_order'
+        `;
+        const [columns] = await pool.query(checkColumnQuery);
+        if (columns.length === 0) {
+            const alterQuery = `ALTER TABLE subscriptions ADD COLUMN discount_used_on_first_order BOOLEAN DEFAULT FALSE`;
+            await pool.query(alterQuery);
+            if (process.env.NODE_ENV === 'development') {
+                console.log('✅ Added discount_used_on_first_order column to subscriptions');
+            }
+        }
+    } catch (error) {
+        console.error('❌ Error creating subscriptions table:', error);
+    }
+};
+
 // Initialize all tables
 const initializeDatabase = async () => {
     if (process.env.NODE_ENV === 'development') {
@@ -305,8 +344,114 @@ const initializeDatabase = async () => {
     await createOrdersTable();
     await createOrderItemsTable();
     await createCartTable();
+    await createSubscriptionsTable();
+    await createReturnsTable();
+    await createCancellationsTable();
+    await createFAQsTable();
     if (process.env.NODE_ENV === 'development') {
         console.log('\n✅ All tables initialized!\n');
+    }
+};
+
+// Create Returns Table
+const createReturnsTable = async () => {
+    const query = `
+    CREATE TABLE IF NOT EXISTS returns (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      user_id INT NOT NULL,
+      reason VARCHAR(255) NOT NULL,
+      description TEXT,
+      return_status VARCHAR(50) DEFAULT 'requested',
+      refund_amount DECIMAL(10, 2),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `;
+    try {
+        const pool = await getPool();
+        await pool.query(query);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Returns table created/exists');
+        }
+    } catch (error) {
+        console.error('❌ Error creating returns table:', error);
+    }
+};
+
+// Create Cancellations Table
+const createCancellationsTable = async () => {
+    const query = `
+    CREATE TABLE IF NOT EXISTS cancellations (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      order_id INT NOT NULL,
+      user_id INT NOT NULL,
+      reason VARCHAR(255) NOT NULL,
+      description TEXT,
+      cancellation_status VARCHAR(50) DEFAULT 'pending',
+      refund_amount DECIMAL(10, 2),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `;
+    try {
+        const pool = await getPool();
+        await pool.query(query);
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ Cancellations table created/exists');
+        }
+    } catch (error) {
+        console.error('❌ Error creating cancellations table:', error);
+    }
+};
+
+// Create FAQs Table
+const createFAQsTable = async () => {
+    const query = `
+    CREATE TABLE IF NOT EXISTS faqs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      question VARCHAR(500) NOT NULL,
+      answer TEXT NOT NULL,
+      category VARCHAR(100),
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+    try {
+        const pool = await getPool();
+        await pool.query(query);
+
+        // Seed default FAQs
+        const [[{ count }]] = await pool.query('SELECT COUNT(*) AS count FROM faqs');
+        if (count === 0) {
+            const faqs = [
+                ['How can I track my order?', 'You can track your order using the "Track Order" page. Enter your order ID and you will see the current status and estimated delivery date.', 'Orders', true],
+                ['What is your return policy?', 'You can return products within 30 days of delivery. The product must be unused and in original packaging. Visit the "Return" page to initiate a return.', 'Returns', true],
+                ['How long does delivery take?', 'Standard delivery takes 5-7 business days. Express delivery is available for 2-3 business days within selected cities.', 'Shipping', true],
+                ['Can I cancel my order?', 'You can cancel your order within 24 hours of placing it. Go to the "Cancellation" page to request a cancellation.', 'Orders', true],
+                ['What payment methods are accepted?', 'We accept all major credit cards, debit cards, UPI, and digital wallets through Razorpay.', 'Payment', true],
+                ['How do I get a refund?', 'Refunds are processed within 5-7 business days after we receive and verify your returned product. You will receive a notification once the refund is initiated.', 'Returns', true],
+            ];
+
+            await pool.query(
+                'INSERT INTO faqs (question, answer, category, is_active) VALUES ?',
+                [faqs]
+            );
+            if (process.env.NODE_ENV === 'development') {
+                console.log('✅ FAQs table seeded');
+            }
+        }
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log('✅ FAQs table created/exists');
+        }
+    } catch (error) {
+        console.error('❌ Error creating FAQs table:', error);
     }
 };
 

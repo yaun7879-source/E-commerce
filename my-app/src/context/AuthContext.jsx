@@ -4,28 +4,29 @@ import PropTypes from 'prop-types';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        // Check for user and token in localStorage on mount
+    const [user, setUser] = useState(() => {
         const storedUser = localStorage.getItem('authUser');
-        const storedToken = localStorage.getItem('authToken');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        if (storedToken) {
-            setToken(storedToken);
-        }
-        setLoading(false);
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+    const [token, setToken] = useState(() => localStorage.getItem('authToken') || null);
+    const [loading, setLoading] = useState(false);
 
     const login = (userData, authToken) => {
-        setUser(userData);
-        setToken(authToken);
-        localStorage.setItem('authUser', JSON.stringify(userData));
-        localStorage.setItem('authToken', authToken);
+        if (userData) {
+            setUser(userData);
+            localStorage.setItem('authUser', JSON.stringify(userData));
+        } else {
+            setUser(null);
+            localStorage.removeItem('authUser');
+        }
+
+        if (authToken) {
+            setToken(authToken);
+            localStorage.setItem('authToken', authToken);
+        } else {
+            setToken(null);
+            localStorage.removeItem('authToken');
+        }
     };
 
     const logout = () => {

@@ -47,6 +47,9 @@ exports.verifyPayment = async (req, res) => {
       total_amount,
       shipping_address = '',
       address_id = null,
+      discount_applied = false,
+      discount_percentage = 0,
+      discount_amount = 0,
     } = req.body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -121,6 +124,12 @@ exports.verifyPayment = async (req, res) => {
 
     await connection.query('DELETE FROM cart WHERE user_id = ?', [req.user.id]);
     await connection.commit();
+
+    // Mark subscription discount as used if applied on this order
+    if (discount_applied && discount_percentage > 0) {
+      const subscriptionController = require('./subscriptionController');
+      await subscriptionController.markDiscountAsUsed(req.user.id);
+    }
 
     res.status(201).json({ orderId, message: 'Payment verified and order created successfully.' });
   } catch (error) {

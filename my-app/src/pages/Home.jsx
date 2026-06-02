@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../utils/api';
 
-const Home = () => {
-    const authContext = useAuth();
-    const user = authContext?.user || null;
+const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) => {
+    const user = authUser || null;
     const [currentSlide, setCurrentSlide] = useState(0);
     const [bestsellerSlide, setBestsellerSlide] = useState(0);
     const [activeMood, setActiveMood] = useState(null);
@@ -128,20 +125,13 @@ const Home = () => {
 
         setAddingToCart(true);
         try {
-            const response = await apiFetch('/cart/add', {
-                method: 'POST',
-                body: JSON.stringify({
-                    productId,
-                    quantity: 1,
-                }),
-            });
-
-            if (!response.ok) {
+            const success = await addToCart({ id: productId, name: productName });
+            if (success) {
+                setCartMessage(`${productName} added to cart!`);
+                setTimeout(() => setCartMessage(''), 2500);
+            } else {
                 throw new Error('Failed to add item to cart');
             }
-
-            setCartMessage(`${productName} added to cart!`);
-            setTimeout(() => setCartMessage(''), 2500);
         } catch (error) {
             console.error('Error adding to cart:', error);
             setCartMessage('Error adding to cart. Please try again.');
@@ -150,6 +140,7 @@ const Home = () => {
             setAddingToCart(false);
         }
     };
+
 
     const formatReviewDate = (value) => {
         try {
@@ -322,6 +313,36 @@ const Home = () => {
                     flex-shrink: 0;
                     position: relative;
                     overflow: hidden;
+                }
+
+                .bs-like-btn {
+                    position: absolute;
+                    top: 1rem;
+                    right: 1rem;
+                    width: 42px;
+                    height: 42px;
+                    border-radius: 50%;
+                    border: 1px solid rgba(255,255,255,0.75);
+                    background: rgba(255,255,255,0.92);
+                    color: #8f6a55;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    font-size: 1.15rem;
+                    box-shadow: 0 10px 22px rgba(0,0,0,0.12);
+                    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+                }
+
+                .bs-like-btn:hover {
+                    transform: translateY(-1px);
+                    background: #fff;
+                }
+
+                .bs-like-btn.liked {
+                    background: rgba(255,235,237,0.95);
+                    color: #d32f2f;
+                    border-color: rgba(211,47,47,0.35);
                 }
 
                 .bs-img-side img {
@@ -1052,6 +1073,14 @@ const Home = () => {
                             <div key={idx} className="bs-card-new">
                                 <div className="bs-img-side">
                                     <img src={item.img} alt={item.name} />
+                                    <button
+                                        type="button"
+                                        className={`bs-like-btn ${likedItems.includes(item.id) ? 'liked' : ''}`}
+                                        onClick={() => toggleLike(item.id, item.name)}
+                                        aria-label={likedItems.includes(item.id) ? 'Unlike item' : 'Like item'}
+                                    >
+                                        {likedItems.includes(item.id) ? '❤️' : '🤍'}
+                                    </button>
                                     <span className="bs-tag-badge" style={{ background: tagColors[item.tag] || '#2c2825' }}>
                                         {item.tag}
                                     </span>
@@ -1066,9 +1095,9 @@ const Home = () => {
                                         <button
                                             className="bs-add-btn"
                                             onClick={() => handleAddToCart(item.id, item.name)}
-                                            disabled={addingToCart}
+                                            disabled={addingToCart || !user}
                                         >
-                                            🛒 {addingToCart ? 'Adding...' : 'Add to Cart'}
+                                            🛒 {!user ? 'Login to add' : addingToCart ? 'Adding...' : 'Add to Cart'}
                                         </button>
                                         <Link to="/shop" style={{ fontFamily: "'DM Sans',sans-serif", fontSize: '0.78rem', color: 'var(--gold-dark,#a07840)', textDecoration: 'none', letterSpacing: '0.04em' }}>
                                             View all →

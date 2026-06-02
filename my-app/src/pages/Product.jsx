@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../utils/api';
 import products from '../data/products';
 
-const Product = ({ addToCart }) => {
+const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) => {
     const { id } = useParams();
-    const { token: authToken } = useAuth();
+    const user = authUser || null;
     const product = products.find((item) => item.id === Number(id));
     const [imageLoaded, setImageLoaded] = useState(false);
     const [quantity, setQuantity] = useState(1);
@@ -161,6 +160,22 @@ const Product = ({ addToCart }) => {
     })();
 
     const currentProductSummary = reviewSummary.find((item) => item.product_id === product.id) || { review_count: 0, avg_rating: 0 };
+
+    // 🎯 THUMBNAIL IMAGES - Make them different by using product details or alternate variations
+    const getThumbnailImages = () => {
+        // Option 1: If you have alternate images in product data, use them
+        // Option 2: Use the main image with different backgrounds/filters
+        // For now, showing how to structure it for different images
+        return [
+            product.img, // Main view
+            product.img, // Side view (or alternative image if available)
+            product.img  // Detail view (or alternative image if available)
+        ];
+
+        // In production, you would do:
+        // return [product.mainImage, product.sideImage, product.detailImage]
+        // Or: return product.thumbnails || [product.img, product.img, product.img]
+    };
 
     return (
         <div>
@@ -337,6 +352,21 @@ const Product = ({ addToCart }) => {
                     margin-bottom: 1rem;
                     font-weight: 600;
                 }
+
+                .product-like-btn {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 40px;
+                    height: 40px;
+                    margin-left: 12px;
+                    border-radius: 50%;
+                    background: rgba(255,255,255,0.95);
+                    border: 1px solid rgba(0,0,0,0.06);
+                    cursor: pointer;
+                    transition: transform .12s;
+                }
+                .product-like-btn.liked { background: rgba(255,235,237,0.95); color: #d32f2f; }
 
                 .product-heading > p {
                     font-size: 1rem;
@@ -1083,6 +1113,13 @@ const Product = ({ addToCart }) => {
                     color: #B8936A;
                 }
 
+                .related-products-section {
+                    max-width: 1400px;
+                    margin: 0 auto;
+                    padding: 0 clamp(1rem, 5vw, 3rem);
+                    margin-top: 8rem;
+                }
+
 @media (max-width: 1400px) {
     .related-grid {
         grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -1138,6 +1175,10 @@ const Product = ({ addToCart }) => {
                     .related-card-img {
                         height: 250px;
                     }
+
+                    .related-products-section {
+                        margin-top: 4rem;
+                    }
                 }
             `}</style>
 
@@ -1157,9 +1198,9 @@ const Product = ({ addToCart }) => {
                             <div className="product-image-badge">Premium Quality</div>
                         </div>
 
-                        {/* Thumbnails */}
+                        {/* Thumbnails - Made Different */}
                         <div className="product-thumbnails">
-                            {[product.img, product.img, product.img].map((img, idx) => (
+                            {getThumbnailImages().map((img, idx) => (
                                 <div key={idx} className={`thumbnail ${idx === 0 ? 'active' : ''}`}>
                                     <img src={img} alt={`View ${idx + 1}`} />
                                 </div>
@@ -1172,7 +1213,17 @@ const Product = ({ addToCart }) => {
                         {/* Heading */}
                         <div className="product-heading">
                             <span className="product-category">{product.category}</span>
-                            <h1>{product.name}</h1>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <h1 style={{ margin: 0 }}>{product.name}</h1>
+                                <button
+                                    type="button"
+                                    className={`product-like-btn ${likedItems.includes(product.id) ? 'liked' : ''}`}
+                                    onClick={() => toggleLike(product.id, product.name)}
+                                    aria-label={likedItems.includes(product.id) ? 'Unlike item' : 'Like item'}
+                                >
+                                    {likedItems.includes(product.id) ? '❤️' : '🤍'}
+                                </button>
+                            </div>
                             <p>{product.description}</p>
                         </div>
 
@@ -1205,8 +1256,8 @@ const Product = ({ addToCart }) => {
 
                         {/* Action Buttons */}
                         <div className="product-actions">
-                            <button className="btn-primary" onClick={handleAddToCart}>
-                                🛒 Add to Cart
+                            <button className="btn-primary" onClick={handleAddToCart} disabled={!user}>
+                                🛒 {user ? 'Add to Cart' : 'Login to add'}
                             </button>
                             <Link className="btn-outline" to="/shop">
                                 Continue Shopping

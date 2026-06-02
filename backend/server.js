@@ -51,6 +51,10 @@ const paymentRoutes = require('./routes/payment');
 const addressRoutes = require('./routes/addresses');
 const reviewRoutes = require('./routes/reviews');
 const authRoutes = require('./routes/auth');
+const subscriptionRoutes = require('./routes/subscriptions');
+const returnRoutes = require('./routes/returns');
+const cancellationRoutes = require('./routes/cancellations');
+const faqRoutes = require('./routes/faqs');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -213,6 +217,10 @@ app.use('/api/payment', paymentRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/cancellations', cancellationRoutes);
+app.use('/api/faqs', faqRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {

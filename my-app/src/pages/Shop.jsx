@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import products from '../data/products';
 
-const Shop = ({ addToCart }) => {
+const Shop = ({ addToCart, likedItems = [], toggleLike = () => { } }) => {
+    const { user } = useAuth();
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [priceRange, setPriceRange] = useState([0, 3000]);
 
@@ -299,6 +301,25 @@ const Shop = ({ addToCart }) => {
                     flex-shrink: 0;
                 }
 
+                .product-like-btn {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    background: rgba(255,255,255,0.9);
+                    border: 1px solid rgba(0,0,0,0.06);
+                    cursor: pointer;
+                    transition: transform 0.15s, background 0.15s, color 0.15s;
+                    flex-shrink: 0;
+                }
+                .product-like-btn:hover { transform: translateY(-2px); }
+                .product-like-btn.liked { background: rgba(255,235,237,0.95); color: #d32f2f; border-color: rgba(211,47,47,0.12); }
+
                 .product-img {
                     width: 100%;
                     height: 100%;
@@ -502,6 +523,13 @@ const Shop = ({ addToCart }) => {
 
                         <div className="product-img-wrapper">
                             <img src={product.img} alt={product.name} className="product-img" />
+                            <button
+                                className={`product-like-btn ${likedItems.includes(product.id) ? 'liked' : ''}`}
+                                aria-label={likedItems.includes(product.id) ? 'Remove like' : 'Like'}
+                                onClick={() => toggleLike(product.id, product.name)}
+                            >
+                                {likedItems.includes(product.id) ? '♥' : '♡'}
+                            </button>
                             {product.tag && (
                                 <span
                                     className="product-tag-badge"
@@ -518,8 +546,8 @@ const Shop = ({ addToCart }) => {
                             <div className="product-price">₹{product.price.toLocaleString()}</div>
                             <div className="product-rating">⭐ {product.rating}</div>
                             <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', marginTop: 'auto' }}>
-                                <button className="product-btn" onClick={() => addToCart && addToCart(product)}>
-                                    🛒 Add to Cart
+                                <button className="product-btn" onClick={() => addToCart && addToCart(product)} disabled={!user}>
+                                    🛒 {user ? 'Add to Cart' : 'Login to add'}
                                 </button>
                                 <Link to={`/product/${product.id}`} className="product-btn product-btn-secondary">
                                     View Details

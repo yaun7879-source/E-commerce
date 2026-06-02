@@ -9,6 +9,12 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import AuthPage from './pages/AuthPage';
 import Checkout from './pages/Checkout';
+import TrackOrder from './pages/TrackOrder';
+import Return from './pages/Return';
+import Cancellation from './pages/Cancellation';
+import FAQ from './pages/FAQ';
+import HelpHub from './pages/HelpHub';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import products from './data/products';
 import './App.css';
 const catalog = products;
@@ -30,22 +36,30 @@ function App() {
   const [cartItems, setCartItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const cartRef = useRef(null);
+  // ── Likes / Wishlist ──
+  const [likedItems, setLikedItems] = useState([]);
+  const [likesOpen, setLikesOpen] = useState(false);
+  const likesRef = useRef(null);
+
+  // ── Subscription state ──
+  const [subscription, setSubscription] = useState({ isSubscribed: false, discountPercentage: 0 });
 
   // ── Toast ──
   const [toast, setToast] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [lastOrderId, setLastOrderId] = useState(null);
   const navigate = useNavigate();
 
   const totalItems = cartItems.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('authToken');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return authToken ? { Authorization: `Bearer ${authToken}` } : {};
   };
 
   const clearAuth = () => {
     authLogout();
+    setCartItems([]);
   };
 
   const handleUnauthorized = () => {
@@ -53,8 +67,33 @@ function App() {
     showToast('Session expired. Please sign in again.');
   };
 
+  useEffect(() => {
+    const hydrateCookieAuth = async () => {
+      if (authUser || authToken) return;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+          credentials: 'include'
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const user = data.user || data;
+        authLogin(user, null);
+      } catch (error) {
+        console.error('Unable to hydrate cookie auth:', error);
+      }
+    };
+
+    hydrateCookieAuth();
+  }, [authUser, authToken, authLogin]);
+
   const loadCart = async () => {
-    if (!authToken || !authUser) return;
+    if (!authToken && !authUser) {
+      setCartItems([]);
+      return;
+    }
     try {
       const response = await fetch(`${API_BASE_URL}/cart`, {
         credentials: 'include',
@@ -71,6 +110,32 @@ function App() {
       setCartItems(data);
     } catch (error) {
       console.error('Unable to load cart:', error);
+    }
+  };
+
+  const checkSubscription = async () => {
+    if (!authToken && !authUser) {
+      setSubscription({ isSubscribed: false, discountPercentage: 0 });
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscriptions/status`, {
+        credentials: 'include',
+        headers: { ...getAuthHeaders() },
+      });
+      if (response.status === 401) {
+        handleUnauthorized();
+        return;
+      }
+      if (!response.ok) {
+        setSubscription({ isSubscribed: false, discountPercentage: 0 });
+        return;
+      }
+      const data = await response.json();
+      setSubscription(data);
+    } catch (error) {
+      console.error('Unable to check subscription:', error);
+      setSubscription({ isSubscribed: false, discountPercentage: 0 });
     }
   };
 
@@ -92,6 +157,12 @@ function App() {
   };
 
   const verifyRazorpayPayment = async (paymentResponse, addressId = null, shippingAddress = '') => {
+    // Calculate final amount with discount
+    const gst = Math.round(cartTotal * 0.18);
+    const subtotalWithGST = cartTotal + gst;
+    const discountAmount = subscription.isSubscribed ? Math.round(subtotalWithGST * (subscription.discountPercentage / 100)) : 0;
+    const finalAmount = subtotalWithGST - discountAmount;
+
     const payload = {
       razorpay_order_id: paymentResponse.razorpay_order_id,
       razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -101,7 +172,12 @@ function App() {
         quantity: item.quantity,
         price: item.price,
       })),
-      total_amount: cartTotal,
+      total_amount: finalAmount,
+      base_amount: cartTotal,
+      gst_amount: gst,
+      discount_applied: subscription.isSubscribed,
+      discount_percentage: subscription.discountPercentage,
+      discount_amount: discountAmount,
       shipping_address: shippingAddress || authUser?.address || '',
       address_id: addressId,
     };
@@ -128,7 +204,7 @@ function App() {
   };
 
   const handlePayNow = async ({ addressId = null, shippingAddress = '' } = {}) => {
-    if (!authUser || !authToken) {
+    if (!authUser && !authToken) {
       showToast('Please log in to checkout');
       return;
     }
@@ -141,6 +217,12 @@ function App() {
     setPaymentLoading(true);
 
     try {
+      // Calculate final amount with discount if subscribed
+      const gst = Math.round(cartTotal * 0.18);
+      const subtotalWithGST = cartTotal + gst;
+      const discountAmount = subscription.isSubscribed ? Math.round(subtotalWithGST * (subscription.discountPercentage / 100)) : 0;
+      const finalAmount = subtotalWithGST - discountAmount;
+
       const createResponse = await fetch(`${API_BASE_URL}/payment/create-order`, {
         method: 'POST',
         credentials: 'include',
@@ -148,7 +230,13 @@ function App() {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ total_amount: cartTotal, currency: 'INR' }),
+        body: JSON.stringify({
+          total_amount: finalAmount,
+          currency: 'INR',
+          discountApplied: subscription.isSubscribed,
+          discountPercentage: subscription.discountPercentage,
+          discountAmount: discountAmount
+        }),
       });
 
       if (!createResponse.ok) {
@@ -171,9 +259,10 @@ function App() {
         order_id: order.id,
         handler: async (response) => {
           try {
-            await verifyRazorpayPayment(response);
+            const result = await verifyRazorpayPayment(response, addressId, shippingAddress);
             setPaymentLoading(false);
-            showToast('Payment successful! Order created.');
+            setLastOrderId(result.orderId);
+            showToast(`Payment successful! Order #${result.orderId} created.`);
           } catch (verifyError) {
             console.error('Verification failed:', verifyError);
             setPaymentLoading(false);
@@ -250,7 +339,34 @@ function App() {
 
   useEffect(() => {
     loadCart();
+    checkSubscription();
   }, [authToken, authUser]);
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem('likedItems');
+      if (stored) setLikedItems(JSON.parse(stored));
+    } catch (e) {
+      console.warn('Could not load liked items', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('likedItems', JSON.stringify(likedItems));
+    } catch (e) {
+      console.warn('Could not persist liked items', e);
+    }
+  }, [likedItems]);
+
+  const toggleLike = (productId, productName = '') => {
+    setLikedItems(prev => {
+      const exists = prev.includes(productId);
+      const next = exists ? prev.filter(id => id !== productId) : [...prev, productId];
+      showToast(exists ? `${productName || 'Item'} removed from likes` : `${productName || 'Item'} added to likes`);
+      return next;
+    });
+  };
 
   const handleSearch = (q) => {
     setSearchQuery(q);
@@ -273,9 +389,9 @@ function App() {
   };
 
   const addToCart = async (product) => {
-    if (!authUser || !authToken) {
+    if (!authUser && !authToken) {
       showToast('Please log in to save your cart');
-      return;
+      return false;
     }
 
     try {
@@ -296,7 +412,7 @@ function App() {
 
       if (response.status === 401) {
         handleUnauthorized();
-        return;
+        return false;
       }
 
       if (!response.ok) {
@@ -307,14 +423,16 @@ function App() {
       await loadCart();
       showToast(`✦ ${product.name} added`);
       setSearchOpen(false);
+      return true;
     } catch (error) {
       console.error('Add to cart failed:', error);
       showToast('Unable to add item to cart');
+      return false;
     }
   };
 
   const removeFromCart = async (cartItemId) => {
-    if (!authUser || !authToken) {
+    if (!authUser && !authToken) {
       setCartItems(prev => prev.filter(i => i.id !== cartItemId));
       return;
     }
@@ -336,7 +454,7 @@ function App() {
   };
 
   const changeQty = async (cartItemId, delta) => {
-    if (!authUser || !authToken) {
+    if (!authUser && !authToken) {
       setCartItems(prev => prev
         .map(i => i.id === cartItemId ? { ...i, quantity: i.quantity + delta } : i)
         .filter(i => i.quantity > 0)
@@ -532,6 +650,7 @@ function App() {
             <Link to="/shop" onClick={handleNavClick}>Shop</Link>
             <Link to="/about" onClick={handleNavClick}>About</Link>
             <Link to="/contact" onClick={handleNavClick}>Contact</Link>
+            <Link to="/help" onClick={handleNavClick}>Help & Support</Link>
             <Link
               to="/login"
               className="auth-pill-btn"
@@ -614,12 +733,52 @@ function App() {
               </div>
             </div>
 
-            {/* WISHLIST */}
-            <button className="nav-icon-btn" aria-label="Wishlist">
-              <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-            </button>
+            {/* WISHLIST / Likes */}
+            <div className="cd-wrap" ref={likesRef} style={{ marginRight: 6 }}>
+              <button
+                type="button"
+                className="nav-icon-btn"
+                aria-label="Wishlist"
+                onClick={() => setLikesOpen(o => !o)}
+              >
+                <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {likedItems.length > 0 && <span className="cart-badge">{likedItems.length}</span>}
+              </button>
+
+              <div className={`cart-dropdown ${likesOpen ? 'open' : ''}`} style={{ width: 380 }}>
+                <div className="cd-head">
+                  <h3>Liked Items</h3>
+                  {likedItems.length > 0 && <span className="cd-badge">{likedItems.length} saved</span>}
+                </div>
+                <div className="cd-body">
+                  {likedItems.length === 0 ? (
+                    <div className="cd-empty">No liked items yet</div>
+                  ) : (
+                    likedItems.map(id => {
+                      const p = catalog.find(x => x.id === Number(id));
+                      if (!p) return null;
+                      return (
+                        <div key={p.id} className="cd-item">
+                          <div style={{ width: 52, height: 52, borderRadius: 8, overflow: 'hidden', background: '#f5f5f5', flexShrink: 0 }}>
+                            <img src={p.img} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <div className="cd-info">
+                            <div className="cd-iname">{p.name}</div>
+                            <div className="cd-iprice">₹{Number(p.price).toLocaleString('en-IN')}</div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <button className="cd-qbtn" onClick={() => navigate(`/product/${p.id}`)}>View</button>
+                            <button className="cd-rm" onClick={() => toggleLike(p.id, p.name)}>×</button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* CART */}
             <div className="cd-wrap" ref={cartRef}>
@@ -683,13 +842,19 @@ function App() {
         {/* PAGE CONTENT */}
         <main className="main-content">
           <Routes>
-            <Route path="/" element={<Home addToCart={addToCart} />} />
-            <Route path="/shop" element={<Shop addToCart={addToCart} />} />
-            <Route path="/product/:id" element={<Product addToCart={addToCart} />} />
+            <Route path="/" element={<Home authUser={authUser} addToCart={addToCart} likedItems={likedItems} toggleLike={toggleLike} />} />
+            <Route path="/shop" element={<Shop authUser={authUser} addToCart={addToCart} likedItems={likedItems} toggleLike={toggleLike} />} />
+            <Route path="/product/:id" element={<Product authUser={authUser} addToCart={addToCart} likedItems={likedItems} toggleLike={toggleLike} />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/help" element={<HelpHub />} />
             <Route path="/login" element={<AuthPage onLogin={handleLogin} />} />
             <Route path="/signup" element={<AuthPage onLogin={handleLogin} />} />
+            <Route path="/track-order" element={<TrackOrder />} />
+            <Route path="/return" element={<Return />} />
+            <Route path="/cancellation" element={<Cancellation />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route
               path="/checkout"
               element={
@@ -699,7 +864,10 @@ function App() {
                   cartItems={cartItems}
                   cartTotal={cartTotal}
                   onPayNow={handlePayNow}
+                  lastOrderId={lastOrderId}
                   showToast={showToast}
+                  subscription={subscription}
+                  onSubscribe={checkSubscription}
                 />
               }
             />
@@ -726,17 +894,17 @@ function App() {
           </div>
           <div className="footer-col">
             <h4>Help</h4>
-            <a href="#track">Track Order</a>
-            <a href="#returns">Returns</a>
-            <a href="#faq">FAQ</a>
-            <a href="#cancellation">Cancellation</a>
+            <Link to="/track-order" onClick={handleNavClick}>Track Order</Link>
+            <Link to="/return" onClick={handleNavClick}>Returns</Link>
+            <Link to="/faq" onClick={handleNavClick}>FAQ</Link>
+            <Link to="/cancellation" onClick={handleNavClick}>Cancellation</Link>
           </div>
           <div className="footer-col">
             <h4>Company</h4>
             <Link to="/about" onClick={handleNavClick}>Our Story</Link>
+            <Link to="/privacy-policy" onClick={handleNavClick}>Privacy Policy</Link>
             <a href="#blog">Blog</a>
             <a href="#wholesale">Wholesale</a>
-            <a href="#terms">Terms & Conditions</a>
           </div>
         </footer>
 

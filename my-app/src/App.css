@@ -2040,6 +2040,53 @@ body {
     font-weight: 600;
 }
 
+.co-summary__discount {
+    color: #5c8a3c;
+    font-weight: 600;
+}
+
+.co-summary__discount-amount {
+    color: #5c8a3c !important;
+    font-weight: 600 !important;
+}
+
+.co-subscribe-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.95rem;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #2a2a2a;
+    font-size: 0.84rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.22s;
+    margin-top: 1rem;
+    margin-bottom: 0.8rem;
+    box-shadow: 0 8px 20px rgba(255, 215, 0, 0.25);
+}
+
+.co-subscribe-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(255, 215, 0, 0.35);
+}
+
+.co-subscribe-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.co-subscribe-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .co-pay-btn {
     display: flex;
     align-items: center;
@@ -2146,14 +2193,14 @@ body {
         display: flex;
     }
 
-   .hero-left {
-    width: 100%;
-    background: linear-gradient(to bottom, 
-        rgba(240, 232, 218, 0.75) 0%, 
-        rgba(240, 232, 218, 0.45) 50%, 
-        transparent 100%);
-    padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem) clamp(1.5rem, 3vw, 2rem);
-}
+    .hero-left {
+        width: 100%;
+        background: linear-gradient(to bottom,
+                rgba(240, 232, 218, 0.75) 0%,
+                rgba(240, 232, 218, 0.45) 50%,
+                transparent 100%);
+        padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem) clamp(1.5rem, 3vw, 2rem);
+    }
 
     .hero-h1 {
         font-size: clamp(1.6rem, 6vw, 2.4rem);
@@ -2171,22 +2218,22 @@ body {
         grid-template-columns: 1fr;
     }
 
-        .nl-form {
-            flex-direction: column;
-            gap: 0.8rem;
-        }
-    
-        .nl-form input {
-            border-radius: 50px;
-            width: 100%;
-            padding: clamp(0.85rem, 2.5vw, 1.1rem) clamp(1.2rem, 4vw, 1.8rem);
-        }
-    
-        .nl-form button {
-            border-radius: 50px;
-            width: 100%;
-            padding: clamp(0.85rem, 2.5vw, 1.1rem) clamp(1rem, 3vw, 1.6rem);
-        }
+    .nl-form {
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .nl-form input {
+        border-radius: 50px;
+        width: 100%;
+        padding: clamp(0.85rem, 2.5vw, 1.1rem) clamp(1.2rem, 4vw, 1.8rem);
+    }
+
+    .nl-form button {
+        border-radius: 50px;
+        width: 100%;
+        padding: clamp(0.85rem, 2.5vw, 1.1rem) clamp(1rem, 3vw, 1.6rem);
+    }
 
     .footer {
         grid-template-columns: 1fr;
@@ -2216,7 +2263,7 @@ body {
 @media (max-width: 560px) {
     .co-page {
         margin: 1rem auto 3rem;
-        padding: 1.5rem 1rem;
+        padding: 1rem 0.75rem;
     }
 
     .co-form__row {
@@ -2224,7 +2271,308 @@ body {
     }
 
     .co-step__line {
-        width: 30px;
+        width: 20px;
+        margin: 0 0.3rem;
+    }
+
+    .co-steps {
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .co-header {
+        margin-bottom: 0.5rem;
+    }
+
+    .co-title {
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+    }
+
+    .co-card__body {
+        padding: 1rem 1.2rem;
+    }
+
+    .co-addr-card {
+        padding: 0.9rem 1rem;
+        gap: 0.8rem;
+    }
+
+    .co-addr-label {
+        font-size: 0.88rem;
+    }
+
+    .co-addr-text {
+        font-size: 0.78rem;
+    }
+
+    .co-save-btn {
+        padding: 0.85rem;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .co-page {
+        margin: 0.75rem auto 2.5rem;
+        padding: 0.75rem 0.6rem;
+        gap: 1.2rem;
+    }
+
+    .co-header {
+        margin-bottom: 0.75rem;
+    }
+
+    .co-title {
+        font-size: clamp(1.3rem, 5vw, 2rem);
+        margin-bottom: 0.3rem;
+    }
+
+    .co-subtitle {
+        font-size: 0.85rem;
+    }
+
+    .co-divider {
+        width: 50px;
+        margin: 0.75rem auto 0;
+    }
+
+    .co-steps {
+        gap: 0.15rem;
+    }
+
+    .co-step__bubble {
+        width: 26px;
+        height: 26px;
+        font-size: 0.65rem;
+    }
+
+    .co-step__label {
+        font-size: 0.6rem;
+    }
+
+    .co-step__line {
+        width: 16px;
+        margin: 0 0.2rem;
+    }
+
+    .co-card {
+        border-radius: 16px;
+    }
+
+    .co-card__header {
+        padding: 1rem 1.2rem;
+        gap: 0.8rem;
+    }
+
+    .co-card__icon {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .co-card__title {
+        font-size: 0.95rem;
+        margin-bottom: 1px;
+    }
+
+    .co-card__meta {
+        font-size: 0.7rem;
+    }
+
+    .co-card__body {
+        padding: 0.9rem 1rem;
+    }
+
+    .co-addr-list {
+        gap: 0.7rem;
+    }
+
+    .co-addr-card {
+        padding: 0.8rem 0.9rem;
+        gap: 0.7rem;
+        border-radius: 12px;
+    }
+
+    .co-addr-radio {
+        width: 16px;
+        height: 16px;
+        margin-top: 2px;
+    }
+
+    .co-addr-label {
+        font-size: 0.82rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .co-addr-text {
+        font-size: 0.75rem;
+        line-height: 1.6;
+        margin-bottom: 0.25rem;
+    }
+
+    .co-addr-phone {
+        font-size: 0.72rem;
+    }
+
+    .co-addr-badge {
+        font-size: 0.55rem;
+        padding: 2px 8px;
+    }
+
+    .co-add-toggle {
+        padding: 0.6rem 1rem;
+        font-size: 0.75rem;
+        margin-top: 0.5rem;
+    }
+
+    .co-field__label {
+        font-size: 0.62rem;
+    }
+
+    .co-field__input {
+        padding: 0.7rem 0.85rem;
+        font-size: 0.85rem;
+    }
+
+    .co-field {
+        margin-bottom: 0.8rem;
+    }
+
+    .co-form__row {
+        gap: 0.75rem;
+    }
+
+    .co-save-btn {
+        padding: 0.8rem;
+        font-size: 0.75rem;
+        margin-top: 0.2rem;
+    }
+
+    .co-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .co-right {
+        position: static;
+    }
+
+    .co-summary {
+        border-radius: 18px;
+    }
+
+    .co-summary__top {
+        padding: 1.2rem 1.3rem;
+    }
+
+    .co-summary__eyebrow {
+        font-size: 0.58rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .co-summary__title {
+        font-size: 1.2rem;
+    }
+
+    .co-summary__body {
+        padding: 1rem 1.2rem;
+    }
+
+    .co-order-item {
+        gap: 0.7rem;
+    }
+
+    .co-order-item__thumb {
+        width: 48px;
+        height: 48px;
+        font-size: 1.1rem;
+    }
+
+    .co-order-item__name {
+        font-size: 0.82rem;
+    }
+
+    .co-order-item__desc {
+        font-size: 0.7rem;
+    }
+
+    .co-order-item__price {
+        font-size: 0.82rem;
+    }
+
+    .co-summary__sep {
+        margin: 1rem 0;
+    }
+
+    .co-summary__row {
+        font-size: 0.8rem;
+    }
+
+    .co-summary__total {
+        margin-top: 0.9rem;
+        padding-top: 0.9rem;
+    }
+
+    .co-summary__total-label {
+        font-size: 0.65rem;
+    }
+
+    .co-summary__total-amount {
+        font-size: 1.4rem;
+    }
+
+    .co-subscribe-btn {
+        padding: 0.85rem;
+        font-size: 0.78rem;
+        margin-top: 0.8rem;
+        margin-bottom: 0.6rem;
+    }
+
+    .co-pay-btn {
+        padding: 0.9rem;
+        font-size: 0.8rem;
+        margin-top: 1rem;
+    }
+
+    .co-secure-note {
+        margin-top: 0.7rem;
+        font-size: 0.65rem;
+        gap: 0.35rem;
+    }
+
+    .co-secure-dot {
+        width: 3px;
+        height: 3px;
+    }
+
+    .co-empty {
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .co-empty p {
+        font-size: 0.88rem;
+    }
+
+    .co-empty span {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .co-page {
+        padding: 0.6rem 0.5rem;
+    }
+
+    .co-title {
+        font-size: clamp(1.2rem, 5vw, 1.8rem);
+    }
+
+    .co-step__bubble {
+        width: 24px;
+        height: 24px;
     }
 }
 

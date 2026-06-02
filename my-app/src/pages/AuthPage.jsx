@@ -44,6 +44,42 @@ const EnhancedAuthPage = ({ onLogin }) => {
 
             const cleanUrl = window.location.pathname;
             window.history.replaceState({}, document.title, cleanUrl);
+        } else if (email && !token) {
+            // OAuth callback that sets an HttpOnly cookie on the backend (no token in URL).
+            // Fetch profile from backend using cookie and sync auth state.
+            (async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
+                        credentials: 'include'
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const userFromServer = data.user || data;
+                        localStorage.setItem('authUser', JSON.stringify(userFromServer));
+                        onLogin && onLogin(userFromServer, null);
+                        setAuthMessage('Signed in successfully.');
+                        const cleanUrl = window.location.pathname;
+                        window.history.replaceState({}, document.title, cleanUrl);
+                        return;
+                    }
+
+                    // Fallback: if profile endpoint failed, still set a minimal user
+                    const fallbackUser = {
+                        id: id ? Number(id) : null,
+                        email,
+                        first_name: first_name || '',
+                        last_name: last_name || '',
+                        phone: phone || null,
+                    };
+                    localStorage.setItem('authUser', JSON.stringify(fallbackUser));
+                    onLogin && onLogin(fallbackUser, null);
+                    setAuthMessage('Signed in successfully.');
+                    const cleanUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                } catch (e) {
+                    console.error('OAuth profile fetch failed:', e);
+                }
+            })();
         }
     }, [onLogin]);
     const [resetPassword, setResetPassword] = useState('');
@@ -78,23 +114,32 @@ const EnhancedAuthPage = ({ onLogin }) => {
         setFloatingHearts(hearts);
     }, []);
 
-    // Prevent the entire page from scrolling while the auth card is displayed
+    // Prevent the entire page from scrolling while the auth card is displayed (desktop only)
     useEffect(() => {
+        const isMobile = window.innerWidth <= 900;
         const originalBodyOverflow = document.body.style.overflow;
         const originalDocOverflow = document.documentElement.style.overflow;
         const originalBodyHeight = document.body.style.height;
         const originalDocHeight = document.documentElement.style.height;
 
-        document.body.style.overflow = 'hidden';
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.height = '100vh';
-        document.documentElement.style.height = '100vh';
+        // Only lock on desktop, allow scrolling on mobile
+        if (!isMobile) {
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.height = '100vh';
+            document.documentElement.style.height = '100vh';
+        } else {
+            document.body.style.overflow = 'auto';
+            document.documentElement.style.overflow = 'auto';
+        }
 
         return () => {
-            document.body.style.overflow = originalBodyOverflow || 'auto';
-            document.documentElement.style.overflow = originalDocOverflow || 'auto';
-            document.body.style.height = originalBodyHeight || 'auto';
-            document.documentElement.style.height = originalDocHeight || 'auto';
+            if (!isMobile) {
+                document.body.style.overflow = originalBodyOverflow || 'auto';
+                document.documentElement.style.overflow = originalDocOverflow || 'auto';
+                document.body.style.height = originalBodyHeight || 'auto';
+                document.documentElement.style.height = originalDocHeight || 'auto';
+            }
         };
     }, []);
 
@@ -306,8 +351,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     100% { transform:translateY(-100vh) translateX(var(--drift)) scale(0.6); opacity:0; }
                 }
                 .eau-layout { position:relative; z-index:10; display:flex; width:100%; min-height:100vh; }
-                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:0rem 2rem 2rem; position:relative; }
-                .eau-glow-halo { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(201,169,97,0.06) 0%,transparent 70%); top:9%; left:50%; transform:translate(-50%,-50%); pointer-events:none; animation:haloPulse 6s ease-in-out infinite; filter:blur(25px); }
+                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; position:relative; }
+                .eau-glow-halo { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(201,169,97,0.06) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; animation:haloPulse 6s ease-in-out infinite; filter:blur(25px); }
                 @keyframes haloPulse { 0%,100%{opacity:0.4;transform:translate(-50%,-50%) scale(0.95);} 50%{opacity:0.8;transform:translate(-50%,-50%) scale(1.15);} }
                 .eau-candle-icon { display:none; }
                 @keyframes candleFlicker {
@@ -326,8 +371,12 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-feat-ico { width:40px; height:40px; background:rgba(201,169,97,0.12); border:1px solid rgba(201,169,97,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
                 .eau-feat-t { font-weight:500; font-size:0.9rem; color:rgba(245,240,237,0.9); display:block; letter-spacing:0.02em; margin-bottom:2px; }
                 .eau-feat-s { font-size:0.75rem; color:rgba(212,179,116,0.5); letter-spacing:0.02em; }
-                .eau-left-foot { position:absolute; bottom:2rem; font-family:'Cinzel',serif; font-size:0.55rem; color:rgba(201,169,97,0.25); letter-spacing:0.3em; text-transform:uppercase; }
-                .eau-right { width:500px; flex-shrink:0; display:flex; flex-direction:column; background:rgba(10,8,5,0.75); backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2); border-left:1px solid rgba(201,169,97,0.15); position:relative; max-height:100vh; overflow-y:auto; }
+                .eau-left-foot { position:absolute; bottom:1.5rem; font-family:'Cinzel',serif; font-size:0.55rem; color:rgba(201,169,97,0.25); letter-spacing:0.3em; text-transform:uppercase; }
+                .eau-right { width:500px; flex-shrink:0; display:flex; flex-direction:column; background:rgba(10,8,5,0.75); backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2); border-left:1px solid rgba(201,169,97,0.15); position:relative; height:100vh; overflow-y:auto; overflow-x:hidden; }
+                .eau-right::-webkit-scrollbar { width:6px; }
+                .eau-right::-webkit-scrollbar-track { background:transparent; }
+                .eau-right::-webkit-scrollbar-thumb { background:rgba(201,169,97,0.3); border-radius:3px; }
+                .eau-right::-webkit-scrollbar-thumb:hover { background:rgba(201,169,97,0.5); }
                 .eau-right-bar { height:3px; background:linear-gradient(90deg,transparent,#c9a961,#d4b574,#c9a961,transparent); animation:barShimmer 5s ease-in-out infinite; }
                 @keyframes barShimmer { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
                 .eau-right-glow { position:absolute; inset:0; background:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(201,169,97,0.08) 0%,transparent 60%); pointer-events:none; }
@@ -394,7 +443,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-success-glow { position:fixed; inset:0; background:radial-gradient(circle at center,rgba(111,163,137,0.15) 0%,transparent 70%); z-index:5; pointer-events:none; animation:successPulse 0.6s ease out; }
                 @keyframes successPulse { 0%{opacity:1;} 100%{opacity:0;} }
                 @keyframes slideIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-                @media(max-width:900px){.eau-left{display:none;}.eau-right{width:100%;backdrop-filter:blur(20px);}.eau-mobile-brand{display:block;}}
+                @media(max-width:900px){.eau-left{display:none;}.eau-right{width:100%;backdrop-filter:blur(20px);max-height:100vh;height:auto;min-height:100vh;}.eau-mobile-brand{display:block;}}
                 @media(max-width:520px){.eau-form{padding:1.6rem 1.4rem 2rem;}.eau-name-row{grid-template-columns:1fr;}}
             `}</style>
 
@@ -402,7 +451,6 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 <div className="eau-bg-base" />
                 <div className="eau-glow-rose" />
 
-                {/* ✅ FIXED: No blur overlay - just toast notifications instead */}
                 {authLoading && (
                     <div style={{
                         position: 'fixed',
@@ -436,7 +484,6 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     </div>
                 )}
 
-                {/* Success message toast */}
                 {authMessage && !authError && (
                     <div style={{
                         position: 'fixed',
@@ -459,7 +506,6 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     </div>
                 )}
 
-                {/* Error message toast */}
                 {authError && (
                     <div style={{
                         position: 'fixed',
@@ -506,7 +552,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 <div className="eau-layout">
                     <div className="eau-left">
                         <div className="eau-glow-halo" />
-                        <div style={{ textAlign: 'center', maxWidth: 400, marginTop: '-0.6rem' }}>
+                        <div style={{ textAlign: 'center', maxWidth: 400 }}>
                             <h1 className="eau-title">Light Up</h1>
                             <p className="eau-subtitle">Love & Celebration</p>
                             <div className="eau-divider">

@@ -1,0 +1,131 @@
+.help-navbar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 15px 0;
+    margin: 20px 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+.help-navbar-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.help-navbar-title {
+    color: white;
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.help-navbar-title h3 {
+    margin: 0;
+    font-size: 18px;
+    color: white;
+}
+
+.help-navbar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.help-navbar-menu {
+    display: flex;
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+}
+
+.help-navbar-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 5px 5px;
+}
+
+.help-navbar-item:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.help-icon {
+    font-size: 18px;
+    display: inline-block;
+}
+
+.help-text {
+    font-size: 14px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .help-navbar-toggle {
+        display: block;
+    }
+
+    .help-navbar-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        flex-direction: column;
+        width: 100%;
+        padding: 10px 0;
+        border-radius: 0 0 8px 8px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+    }
+
+    .help-navbar-menu.active {
+        display: flex;
+    }
+
+    .help-navbar-item {
+        width: 100%;
+        margin: 0;
+        padding: 15px 20px;
+        border-radius: 0;
+        justify-content: flex-start;
+        background: transparent;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .help-navbar-item:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: none;
+    }
+
+    .help-navbar-container {
+        position: relative;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .help-text {
+        font-size: 15px;
+    }
+}

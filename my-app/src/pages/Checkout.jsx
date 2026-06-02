@@ -34,10 +34,11 @@ const PlusIcon = () => (
     </svg>
 );
 
-const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToast }) => {
+const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToast, lastOrderId, subscription = { isSubscribed: false, discountPercentage: 0 }, onSubscribe }) => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [subscribeLoading, setSubscribeLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({
         label: 'Home',
@@ -54,8 +55,14 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
     const authHeaders = authToken ? { Authorization: `Bearer ${authToken}` } : {};
     const addressList = useMemo(() => addresses || [], [addresses]);
 
+    // Calculate pricing with subscription discount
+    const gst = Math.round(cartTotal * 0.18);
+    const subtotalWithGST = cartTotal + gst;
+    const discountAmount = (subscription.isSubscribed && subscription.discountPercentage > 0) ? Math.round(subtotalWithGST * (subscription.discountPercentage / 100)) : 0;
+    const finalTotal = subtotalWithGST - discountAmount;
+
     const loadAddresses = async () => {
-        if (!authToken) return;
+        if (!authUser && !authToken) return;
         try {
             const res = await fetch(`${API_BASE_URL}/addresses`, {
                 credentials: 'include',
@@ -71,13 +78,13 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
     };
 
     useEffect(() => {
-        if (!authToken) {
+        if (!authUser && !authToken) {
             showToast('Please log in to continue to checkout');
             navigate('/login');
             return;
         }
         loadAddresses();
-    }, [authToken]);
+    }, [authUser, authToken]);
 
     const handleInputChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }));
 
@@ -113,6 +120,28 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
         await onPayNow({ addressId: selected.id, shippingAddress: formatAddress(selected) });
     };
 
+    const handleSubscribe = async () => {
+        setSubscribeLoading(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/subscriptions/subscribe`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...authHeaders,
+                },
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Unable to subscribe');
+            showToast('✓ Successfully subscribed! 10% discount applied!');
+            onSubscribe?.();
+        } catch (error) {
+            showToast(error.message || 'Subscription failed');
+        } finally {
+            setSubscribeLoading(false);
+        }
+    };
+
     return (
         <div className="co-page">
 
@@ -123,6 +152,16 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
                 <p className="co-subtitle">Select a delivery address to proceed with payment</p>
                 <div className="co-divider" />
             </div>
+
+            {lastOrderId && (
+                <div className="co-card co-card--success" style={{ margin: '20px 0', borderLeft: '5px solid #27ae60' }}>
+                    <div className="co-card__body">
+                        <h2>Order Confirmed</h2>
+                        <p>Your order has been placed successfully. Your order ID is <strong>#{lastOrderId}</strong>.</p>
+                        <p>Use the Track Order page to follow shipment status or refer to this ID for returns and cancellations.</p>
+                    </div>
+                </div>
+            )}
 
             {/* ── Steps ── */}
             <div className="co-steps">
@@ -369,16 +408,34 @@ const Checkout = ({ authUser, authToken, cartItems, cartTotal, onPayNow, showToa
                                 </div>
                                 <div className="co-summary__row">
                                     <span>GST (18%)</span>
-                                    <span>₹{Math.round(cartTotal * 0.18).toLocaleString('en-IN')}</span>
+                                    <span>₹{gst.toLocaleString('en-IN')}</span>
                                 </div>
+                                {subscription.isSubscribed && (
+                                    <div className="co-summary__row co-summary__discount">
+                                        <span>Subscription Discount (-{subscription.discountPercentage}%)</span>
+                                        <span className="co-summary__discount-amount">
+                                            -₹{discountAmount.toLocaleString('en-IN')}
+                                        </span>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="co-summary__total">
                                 <span className="co-summary__total-label">Total</span>
                                 <span className="co-summary__total-amount">
-                                    ₹{Math.round(cartTotal * 1.18).toLocaleString('en-IN')}
+                                    ₹{finalTotal.toLocaleString('en-IN')}
                                 </span>
                             </div>
+
+                            {!subscription.isSubscribed && (
+                                <button
+                                    className="co-subscribe-btn"
+                                    onClick={handleSubscribe}
+                                    disabled={subscribeLoading}
+                                >
+                                    ✨ Subscribe & Get 10% Off
+                                </button>
+                            )}
 
                             <button
                                 className="co-pay-btn"
