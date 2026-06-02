@@ -909,7 +909,7 @@ function App() {
         </footer>
 
         <div className="footer-bottom">
-          <p>© 2025 Mahasu. All rights reserved.</p>
+          <p>© 2026 Mahasu. All rights reserved.</p>
 
           <p>
             Designed & Developed by Yash Patel

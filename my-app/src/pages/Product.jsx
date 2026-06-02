@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../utils/api';
 import products from '../data/products';
 
 const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) => {
     const { id } = useParams();
     const user = authUser || null;
+    const { token: authToken } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const product = products.find((item) => item.id === Number(id));
     const [imageLoaded, setImageLoaded] = useState(false);
     const [quantity, setQuantity] = useState(1);
@@ -82,10 +86,8 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
             return;
         }
 
-        if (!authToken) {
-            setReviewError('Please sign in to post a review.');
-            return;
-        }
+        // Allow submission even when frontend lacks `user` or `authToken` (cookie-based auth may be used).
+        // We'll handle auth failures after the POST response (redirect on 401/403).
 
         setReviewError('');
         setReviewSubmitting(true);
@@ -112,6 +114,12 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
             });
 
             if (!response.ok) {
+                // If backend rejects due to authentication, redirect to login preserving return path
+                if (response.status === 401 || response.status === 403) {
+                    navigate('/login', { state: { from: location.pathname } });
+                    return;
+                }
+
                 const errorData = await parseJsonSafely(response);
                 throw new Error(errorData?.error || 'Unable to submit review');
             }
@@ -692,6 +700,23 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
 .reviewer-info-main {
     flex: 1;
 }
+
+                /* Mobile fixes: reduce large vertical spacing that created blank area on small screens */
+                @media (max-width: 768px) {
+                    .product-page {
+                        min-height: auto;
+                        padding-bottom: 2rem;
+                    }
+
+                    .feedback-wrap {
+                        margin: 2rem auto 1rem;
+                        padding: 1.2rem;
+                        border-radius: 18px;
+                    }
+
+                    .feedback-header-main { margin-bottom: 1.5rem; }
+                    .feedback-wrapper-main { grid-template-columns: 1fr; gap: 1.2rem; }
+                }
 
 .reviewer-name-main {
     font-family: 'Playfair Display', serif;

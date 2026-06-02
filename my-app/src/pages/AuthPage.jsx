@@ -332,7 +332,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     --dark-bg: #0a0805;
                     --text-light: #f5f0ed;
                 }
-                .eau-root { display:flex; min-height:100vh; position:relative; }
+                .eau-root { display:flex; min-height:100vh; position:relative; height: 100vh; overflow: hidden; }
                 .eau-bg-base { position:fixed; inset:0; background:linear-gradient(135deg,#0a0805 0%,#1a0f05 30%,#2a1410 60%,#1a0f05 100%); z-index:1; }
                 .eau-glow-rose { position:fixed; inset:0; background:radial-gradient(ellipse 70% 60% at 30% 50%,rgba(168,47,47,0.12) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 70% 60%,rgba(201,169,97,0.08) 0%,transparent 55%); z-index:2; pointer-events:none; }
                 .eau-particle { position:fixed; border-radius:50%; background:radial-gradient(circle,#f4c06a,#e8a44a); z-index:3; pointer-events:none; animation:emberFloat linear infinite; filter:blur(0.6px); box-shadow:0 0 12px rgba(232,164,74,0.6); }
@@ -350,8 +350,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     90% { opacity:0.2; }
                     100% { transform:translateY(-100vh) translateX(var(--drift)) scale(0.6); opacity:0; }
                 }
-                .eau-layout { position:relative; z-index:10; display:flex; width:100%; min-height:100vh; }
-                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; position:relative; }
+                .eau-layout { position:relative; z-index:10; display:flex; width:100%; height: 100vh; overflow: hidden; }
+                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; position:relative; overflow: hidden; }
                 .eau-glow-halo { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(201,169,97,0.06) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; animation:haloPulse 6s ease-in-out infinite; filter:blur(25px); }
                 @keyframes haloPulse { 0%,100%{opacity:0.4;transform:translate(-50%,-50%) scale(0.95);} 50%{opacity:0.8;transform:translate(-50%,-50%) scale(1.15);} }
                 .eau-candle-icon { display:none; }
@@ -443,8 +443,74 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-success-glow { position:fixed; inset:0; background:radial-gradient(circle at center,rgba(111,163,137,0.15) 0%,transparent 70%); z-index:5; pointer-events:none; animation:successPulse 0.6s ease out; }
                 @keyframes successPulse { 0%{opacity:1;} 100%{opacity:0;} }
                 @keyframes slideIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-                @media(max-width:900px){.eau-left{display:none;}.eau-right{width:100%;backdrop-filter:blur(20px);max-height:100vh;height:auto;min-height:100vh;}.eau-mobile-brand{display:block;}}
-                @media(max-width:520px){.eau-form{padding:1.6rem 1.4rem 2rem;}.eau-name-row{grid-template-columns:1fr;}}
+                @media (max-width: 1024px) {
+                    .eau-left { display: none !important; }
+                    .eau-right { width: 100% !important; }
+                    .eau-mobile-brand { display: block; }
+                    .eau-layout { display: block; }
+                }
+
+                @media (max-width: 520px) {
+                    html, body, #root { height: 100%; width: 100%; overflow: hidden; margin: 0; padding: 0; }
+                    .eau-root { height: 100vh; min-height: 100vh; overflow: hidden; width: 100%; }
+                    .eau-layout { height: 100vh; width: 100%; display: block; }
+                    .eau-left { display: none !important; }
+
+                    .eau-right {
+                        position: fixed;
+                        top: 0; left: 0; right: 0; bottom: 0;
+                        width: 100% !important;
+                        height: 100vh !important;
+                        max-height: 100vh !important;
+                        overflow-y: auto !important;
+                        overflow-x: hidden;
+                        -webkit-overflow-scrolling: touch;
+                        padding: 4px 6px !important;
+                        box-sizing: border-box;
+                        background: rgba(10, 8, 5, 0.95);
+                    }
+
+                    .eau-right-bar { display: none; }
+                    .eau-mobile-brand { padding: 0.8rem 0.6rem; border-bottom: 1px solid rgba(201, 169, 97, 0.1); flex-shrink: 0; }
+                    .eau-mobile-brand > div { font-size: 1.5rem; }
+                    .eau-mobile-brand > p { font-size: 1rem; margin-top: 0.2rem; }
+
+                    .eau-tabs { flex-shrink: 0; padding: 0; }
+                    .eau-tab { padding: 0.8rem; font-size: 0.58rem; }
+
+                    .eau-form {
+                        padding: 6px 4px 10px !important;
+                        max-height: calc(100vh - 10px) !important;
+                        overflow-y: auto !important;
+                        overflow-x: hidden;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 0;
+                    }
+
+                    .eau-form > div:first-child { margin-bottom: 0.5rem; }
+                    .eau-form-h { font-size: 1.2rem; margin-bottom: 0.1rem; font-weight: 400; line-height: 1.2; }
+                    .eau-form-sub { font-size: 0.75rem; margin-bottom: 0.35rem; }
+                    .eau-form-badge { margin-bottom: 0.6rem; padding: 0.25rem 0.75rem; font-size: 0.55rem; }
+                    .eau-social { gap: 0.4rem; margin-bottom: 0.7rem; }
+                    .eau-soc-btn { padding: 0.6rem; font-size: 0.75rem; }
+                    .eau-divider { margin-bottom: 0.7rem; gap: 0.6rem; }
+                    .eau-div-txt { font-size: 0.65rem; }
+                    .eau-fgroup { margin-bottom: 0.5rem; }
+                    .eau-label { font-size: 0.5rem; margin-bottom: 0.25rem; }
+                    .eau-input { padding: 0.6rem 0.65rem 0.6rem 2rem; font-size: 0.8rem; }
+                    .eau-forgot { margin: -0.4rem 0 0.5rem; font-size: 0.7rem; }
+                    .eau-strength { margin: -0.4rem 0 0.5rem; }
+                    .eau-str-bar { gap: 2px; margin-bottom: 3px; }
+                    .eau-str-seg { height: 2px; }
+                    .eau-str-lbl { font-size: 0.65rem; }
+                    .eau-submit { padding: 0.65rem; font-size: 0.65rem; margin-top: 0.4rem; flex-shrink: 0; }
+                    .eau-submit-inner { gap: 0.4rem; }
+                    .eau-arr { font-size: 0.85rem; }
+                    .eau-terms { margin-top: 0.4rem; font-size: 0.68rem; flex-shrink: 0; line-height: 1.4; }
+                    .eau-ornament { display: none !important; }
+                    .eau-name-row { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+                }
             `}</style>
 
             <div className="eau-root">
