@@ -20,27 +20,46 @@ const normalizeApiBaseUrl = (value) => {
         : `${withoutTrailingSlash}/api`;
 };
 
+const getStoredToken = () => {
+    if (typeof window === 'undefined') {
+        return null;
+    }
+
+    try {
+        return sessionStorage.getItem('authToken') || localStorage.getItem('authToken');
+    } catch {
+        return null;
+    }
+};
+
 const getApiBaseUrl = () => {
     const configuredUrl = normalizeApiBaseUrl(
         import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL
     );
 
     if (configuredUrl) {
+        if (import.meta.env.PROD && /localhost|127\.0\.0\.1/.test(configuredUrl)) {
+            return 'https://e-commerce-production-1f1f.up.railway.app/api';
+        }
         return configuredUrl;
     }
 
     if (typeof window !== 'undefined') {
-        const { protocol, host } = window.location;
+        const { host } = window.location;
 
         if (host.includes('localhost') || host.includes('127.0.0.1')) {
-            return `${protocol}//localhost:5001/api`;
+            return 'http://localhost:5001/api';
         }
 
-        return `${protocol}//${host}/api`;
+        if (import.meta.env.PROD) {
+            return 'https://e-commerce-production-1f1f.up.railway.app/api';
+        }
+
+        return `${window.location.protocol}//${host}/api`;
     }
 
     if (import.meta.env.PROD) {
-        return '/api';
+        return 'https://e-commerce-production-1f1f.up.railway.app/api';
     }
 
     return 'http://localhost:5001/api';

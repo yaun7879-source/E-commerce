@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import { API_BASE_URL } from './utils/api';
+import { apiFetch, API_BASE_URL } from './utils/api';
 import Home from './pages/Home';
 import Shop from './pages/Shop';
 import Product from './pages/Product';
@@ -73,9 +73,7 @@ function App() {
       if (authUser || authToken) return;
 
       try {
-        const response = await fetch(`${API_BASE_URL}/auth/profile`, {
-          credentials: 'include'
-        });
+        const response = await apiFetch('/auth/profile');
 
         if (!response.ok) return;
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const EnhancedAuthPage = ({ onLogin }) => {
     const [tab, setTab] = useState('login');
@@ -48,9 +48,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
             // Fetch profile from backend using cookie and sync auth state.
             (async () => {
                 try {
-                    const res = await fetch(`${API_BASE_URL}/auth/profile`, {
-                        credentials: 'include'
-                    });
+                    const res = await apiFetch('/auth/profile');
                     if (res.ok) {
                         const data = await res.json();
                         const userFromServer = data.user || data;
