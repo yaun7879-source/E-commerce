@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiFetch } from '../utils/api';
+import { apiFetch, API_BASE_URL } from '../utils/api';
 
 const EnhancedAuthPage = ({ onLogin }) => {
     const [tab, setTab] = useState('login');
