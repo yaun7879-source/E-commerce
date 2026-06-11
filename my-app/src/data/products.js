@@ -104,7 +104,7 @@ const products = [
             'A beautiful décor piece and gift choice.'
         ],
     },
-   
+
 
     {
         id: 9,
@@ -136,8 +136,8 @@ const products = [
             'Reusable jar for small plants or storage.'
         ],
     },
-  
-   
+
+
     {
         id: 11,
         name: 'Bubble Heart Candle — Red & White',

@@ -16,6 +16,7 @@ import FAQ from './pages/FAQ';
 import HelpHub from './pages/HelpHub';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import products from './data/products';
+import WhatsAppFloat from './components/WhatsAppFloat';
 import './App.css';
 const catalog = products;
 function App() {
@@ -918,6 +919,8 @@ function App() {
           <p>Made with love in India 🇮🇳</p>
         </div>
       </div>
+
+      <WhatsAppFloat />
 
       {/* Toast — rendered once at app level */}
       <div className={`mahasu-toast ${toast ? 'show' : ''}`}>{toast}</div>

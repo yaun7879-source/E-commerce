@@ -12,6 +12,7 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
     const location = useLocation();
     const product = products.find((item) => item.id === Number(id));
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [showAddedNotification, setShowAddedNotification] = useState(false);
     const [reviews, setReviews] = useState([]);
@@ -22,6 +23,8 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
 
     useEffect(() => {
         window.scrollTo(0, 0);
+        setSelectedImageIndex(0);
+        setImageLoaded(false);
     }, [id]);
 
     const loadReviewSummary = async () => {
@@ -169,21 +172,74 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
 
     const currentProductSummary = reviewSummary.find((item) => item.product_id === product.id) || { review_count: 0, avg_rating: 0 };
 
-    // 🎯 THUMBNAIL IMAGES - Make them different by using product details or alternate variations
-    const getThumbnailImages = () => {
-        // Option 1: If you have alternate images in product data, use them
-        // Option 2: Use the main image with different backgrounds/filters
-        // For now, showing how to structure it for different images
-        return [
-            product.img, // Main view
-            product.img, // Side view (or alternative image if available)
-            product.img  // Detail view (or alternative image if available)
-        ];
+    const getGalleryImages = () => {
+        const productImageMap = {
+            2: [
+                '/images/Ocean Breeze Pack of 3/3rd.png',
+                '/images/Ocean Breeze Pack of 3/1st.png',
+                '/images/Ocean Breeze Pack of 3/5th.png',
+                '/images/Ocean Breeze Pack of 3/6th.png',
+            ],
+            4: [
+                '/images/Round Shape Red 12pc/1st Image.png',
+                '/images/Round Shape Red 12pc/3rd Image.png',
+                '/images/Round Shape Red 12pc/4th Image.png',
+                '/images/Round Shape Red 12pc/5th Image.png',
+                '/images/Round Shape Red 12pc/6th image.png',
+            ],
+            5: [
+                '/images/GEL 12pc/4th.png',
+                '/images/GEL 12pc/5th Image.png',
+                '/images/GEL 12pc/[.png',
+            ],
+            6: [
+                '/images/Lavender 3pc/1st Image.png',
+                '/images/Lavender 3pc/2nd Image.png',
+                '/images/Lavender 3pc/5th Image.png',
+                '/images/Lavender 3pc/6th Image.png',
+            ],
+            7: [
+                '/images/Love Pillar Red and White/1st Image.png',
+                '/images/Love Pillar Red and White/3rd Image.png',
+                '/images/Love Pillar Red and White/4th Image.png',
+                '/images/Love Pillar Red and White/5th Image.png',
+            ],
+            9: [
+                '/images/Heartshape Pink 12pc/1st Image.png',
+                '/images/Heartshape Pink 12pc/3rd Image.png',
+                '/images/Heartshape Pink 12pc/4th Image.png',
+                '/images/Heartshape Pink 12pc/5th Image.png',
+                '/images/Heartshape Pink 12pc/6th Image.png',
+            ],
+            12: [
+                '/images/I LED/1st Image.png',
+                '/images/I LED/3rd Image.png',
+                '/images/I LED/4th Image.png',
+                '/images/I LED/5th Image.png',
+                '/images/I LED/6th Image.png',
+            ],
+            10: [
+                '/images/Mahasu Scented Jar/3nd Image.png',
+                '/images/Mahasu Scented Jar/5th Image.png',
+            ],
+            1: [
+                '/images/Red and White Bubble Heartshape/4th Image.png',
+                '/images/Red and White Bubble Heartshape/1st Image.png',
+                '/images/Red and White Bubble Heartshape/2nd Image.png',
+                '/images/Red and White Bubble Heartshape/3rd Image.png',
+            ],
+        };
 
-        // In production, you would do:
-        // return [product.mainImage, product.sideImage, product.detailImage]
-        // Or: return product.thumbnails || [product.img, product.img, product.img]
+        const matchedImages = productImageMap[product.id] || [];
+
+        if (matchedImages.length > 0) {
+            return matchedImages;
+        }
+
+        return [product.img];
     };
+
+    const galleryImages = getGalleryImages();
 
     return (
         <div>
@@ -1215,8 +1271,9 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                         <div className="product-image-card">
                             {!imageLoaded && <div className="product-image-skeleton" />}
                             <img
-                                src={product.img}
-                                alt={product.name}
+                                key={galleryImages[selectedImageIndex]}
+                                src={galleryImages[selectedImageIndex]}
+                                alt={`${product.name} view ${selectedImageIndex + 1}`}
                                 onLoad={() => setImageLoaded(true)}
                                 style={{ display: imageLoaded ? 'block' : 'none' }}
                             />
@@ -1225,10 +1282,19 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
 
                         {/* Thumbnails - Made Different */}
                         <div className="product-thumbnails">
-                            {getThumbnailImages().map((img, idx) => (
-                                <div key={idx} className={`thumbnail ${idx === 0 ? 'active' : ''}`}>
+                            {galleryImages.map((img, idx) => (
+                                <button
+                                    key={`${img}-${idx}`}
+                                    type="button"
+                                    className={`thumbnail ${idx === selectedImageIndex ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setSelectedImageIndex(idx);
+                                        setImageLoaded(false);
+                                    }}
+                                    aria-label={`Show image ${idx + 1}`}
+                                >
                                     <img src={img} alt={`View ${idx + 1}`} />
-                                </div>
+                                </button>
                             ))}
                         </div>
                     </div>

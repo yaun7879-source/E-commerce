@@ -3,7 +3,17 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const { getPool } = require('./db');
 
-const BACKEND_PORT = process.env.PORT || '5001';
+const getBackendBaseUrl = () => {
+    const configuredBaseUrl = process.env.BACKEND_URL || process.env.PUBLIC_BACKEND_URL;
+    if (configuredBaseUrl) {
+        return configuredBaseUrl.replace(/\/$/, '');
+    }
+
+    const port = process.env.PORT || '5001';
+    return `http://localhost:${port}`;
+};
+
+const BACKEND_BASE_URL = getBackendBaseUrl();
 
 /**
  * Passport.js Configuration
@@ -46,7 +56,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
             {
                 clientID: process.env.GOOGLE_CLIENT_ID,
                 clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-                callbackURL: process.env.GOOGLE_CALLBACK_URL || `http://localhost:${BACKEND_PORT}/api/auth/google/callback`,
+                callbackURL: process.env.GOOGLE_CALLBACK_URL || `${BACKEND_BASE_URL}/api/auth/google/callback`,
                 passReqToCallback: false
             },
             async (accessToken, refreshToken, profile, done) => {
@@ -81,7 +91,7 @@ if (process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET) {
             {
                 clientID: process.env.FACEBOOK_APP_ID,
                 clientSecret: process.env.FACEBOOK_APP_SECRET,
-                callbackURL: process.env.FACEBOOK_CALLBACK_URL || `http://localhost:${BACKEND_PORT}/api/auth/facebook/callback`,
+                callbackURL: process.env.FACEBOOK_CALLBACK_URL || `${BACKEND_BASE_URL}/api/auth/facebook/callback`,
                 profileFields: ['id', 'emails', 'name', 'displayName', 'photos'],
                 passReqToCallback: false
             },

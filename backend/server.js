@@ -18,7 +18,6 @@ const { errorHandler } = require('./middleware/errorHandler');
 const { morganMiddleware } = require('./middleware/logger');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const { initializeDatabase, getPool } = require('./config/schema');
-const passport = require('./config/passport');
 
 // Validate required environment variables
 const validateEnv = () => {
@@ -59,6 +58,8 @@ const faqRoutes = require('./routes/faqs');
 const app = express();
 const PORT = Number(process.env.PORT) || 5001;
 const HOST = process.env.HOST || '0.0.0.0';
+process.env.PORT = String(PORT);
+const passport = require('./config/passport');
 
 // Middleware and security
 // Trust proxy when behind a load balancer (required for secure cookies)
@@ -264,22 +265,32 @@ app.use((req, res) => {
 // Centralized error handler (hides stack traces in production)
 app.use(errorHandler);
 
-// Start server
-const server = app.listen(PORT, HOST, () => {
-    const startupMessage = `\n🚀 Server listening on http://${HOST}:${PORT}`;
-    const healthMessage = `📧 Health check: http://${HOST}:${PORT}/api/health`;
-    console.log(startupMessage);
-    console.log(healthMessage);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
-});
+const startServer = (port) => {
+    const server = app.listen(port, HOST, () => {
+        const startupMessage = `\n🚀 Server listening on http://${HOST}:${port}`;
+        const healthMessage = `📧 Health check: http://${HOST}:${port}/api/health`;
+        console.log(startupMessage);
+        console.log(healthMessage);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
+    });
 
-server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-        console.error(`\n❌ Port ${PORT} is already in use. Please stop the other process or set a different PORT in backend/.env.`);
+    server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+            if (process.env.NODE_ENV !== 'production' && port < 5010) {
+                console.warn(`⚠️ Port ${port} is already in use. Trying ${port + 1}...`);
+                startServer(port + 1);
+                return;
+            }
+
+            console.error(`\n❌ Port ${port} is already in use. Please stop the other process or set a different PORT in backend/.env.`);
+            process.exit(1);
+        }
+
+        console.error(err);
         process.exit(1);
-    }
-    console.error(err);
-    process.exit(1);
-});
+    });
+};
+
+startServer(PORT);
 
 module.exports = app;
