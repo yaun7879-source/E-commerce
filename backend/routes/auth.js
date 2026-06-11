@@ -41,8 +41,7 @@ router.get(
 router.get(
     '/google/callback',
     passport.authenticate('google', {
-        failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed`,
-        session: false
+        failureRedirect: `${FRONTEND_URL}/login?error=google_auth_failed`
     }),
     asyncHandler(authController.googleCallback)
 );
@@ -72,8 +71,7 @@ router.get(
 router.get(
     '/facebook/callback',
     passport.authenticate('facebook', {
-        failureRedirect: `${FRONTEND_URL}/login?error=facebook_auth_failed`,
-        session: false
+        failureRedirect: `${FRONTEND_URL}/login?error=facebook_auth_failed`
     }),
     asyncHandler(authController.facebookCallback)
 );
