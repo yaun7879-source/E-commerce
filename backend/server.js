@@ -57,7 +57,8 @@ const cancellationRoutes = require('./routes/cancellations');
 const faqRoutes = require('./routes/faqs');
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+const PORT = Number(process.env.PORT) || 5001;
+const HOST = process.env.HOST || '0.0.0.0';
 
 // Middleware and security
 // Trust proxy when behind a load balancer (required for secure cookies)
@@ -74,23 +75,22 @@ const allowedOrigins = [
     process.env.FRONTEND_URL,     // Production frontend URL (from env)
 ].filter(Boolean);
 
+const normalizeOrigins = (value) => {
+    if (!value) return [];
+    return value.split(',').map((origin) => origin.trim()).filter(Boolean);
+};
+
+const parsedAllowedOrigins = [...new Set([...allowedOrigins, ...normalizeOrigins(process.env.FRONTEND_URLS)])];
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (e.g., mobile apps, curl, native apps)
         if (!origin) return callback(null, true);
 
-        // Check if origin is in allowed list
-        if (allowedOrigins.indexOf(origin) !== -1) {
-            return callback(null, true);
-        }
-
-        // Allow any Vercel deployment domain (more flexible)
-        if (origin && origin.includes('vercel.app')) {
-            return callback(null, true);
-        }
-
-        // Allow localhost variants for development
-        if (origin && origin.includes('localhost')) {
+        if (
+            parsedAllowedOrigins.includes(origin) ||
+            origin.includes('vercel.app') ||
+            origin.includes('railway.app') ||
+            origin.includes('localhost')
+        ) {
             return callback(null, true);
         }
 
@@ -265,11 +265,12 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 // Start server
-const server = app.listen(PORT, () => {
-    if (process.env.NODE_ENV === 'development') {
-        console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-        console.log(`📧 API Health Check: http://localhost:${PORT}/api/health\n`);
-    }
+const server = app.listen(PORT, HOST, () => {
+    const startupMessage = `\n🚀 Server listening on http://${HOST}:${PORT}`;
+    const healthMessage = `📧 Health check: http://${HOST}:${PORT}/api/health`;
+    console.log(startupMessage);
+    console.log(healthMessage);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}\n`);
 });
 
 server.on('error', (err) => {
