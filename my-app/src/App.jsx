@@ -72,6 +72,9 @@ function App() {
     const hydrateCookieAuth = async () => {
       if (authUser || authToken) return;
 
+      const hasSessionCookie = typeof document !== 'undefined' && document.cookie.split(';').some((cookie) => cookie.trim().startsWith('token='));
+      if (!hasSessionCookie) return;
+
       try {
         const response = await apiFetch('/auth/profile');
 
@@ -79,7 +82,9 @@ function App() {
 
         const data = await response.json();
         const user = data.user || data;
-        authLogin(user, null);
+        if (user) {
+          authLogin(user, null);
+        }
       } catch (error) {
         console.error('Unable to hydrate cookie auth:', error);
       }

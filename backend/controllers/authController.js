@@ -180,7 +180,7 @@ exports.facebookCallback = async (req, res) => {
 exports.getUserProfile = async (req, res) => {
     try {
         if (!req.user) {
-            return res.status(401).json({ error: 'Not authenticated' });
+            return res.json({ user: null });
         }
 
         const pool = await getPool();
