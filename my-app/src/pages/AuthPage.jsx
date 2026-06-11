@@ -37,9 +37,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 last_name: last_name || '',
                 phone: phone || null,
             };
-            localStorage.setItem('authToken', token);
-            localStorage.setItem('authUser', JSON.stringify(user));
-            onLogin && onLogin(user, token);
+            sessionStorage.setItem('authUser', JSON.stringify(user));
+            onLogin && onLogin(user, null);
             setAuthMessage('Signed in successfully with Google.');
 
             const cleanUrl = window.location.pathname;
@@ -55,7 +54,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     if (res.ok) {
                         const data = await res.json();
                         const userFromServer = data.user || data;
-                        localStorage.setItem('authUser', JSON.stringify(userFromServer));
+                        sessionStorage.setItem('authUser', JSON.stringify(userFromServer));
                         onLogin && onLogin(userFromServer, null);
                         setAuthMessage('Signed in successfully.');
                         const cleanUrl = window.location.pathname;
@@ -71,7 +70,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                         last_name: last_name || '',
                         phone: phone || null,
                     };
-                    localStorage.setItem('authUser', JSON.stringify(fallbackUser));
+                    sessionStorage.setItem('authUser', JSON.stringify(fallbackUser));
                     onLogin && onLogin(fallbackUser, null);
                     setAuthMessage('Signed in successfully.');
                     const cleanUrl = window.location.pathname;
@@ -279,8 +278,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || data.message || 'Something went wrong');
             if (endpoint === 'login') {
-                localStorage.setItem('authToken', data.token);
-                localStorage.setItem('authUser', JSON.stringify(data.user));
+                sessionStorage.setItem('authToken', data.token);
+                sessionStorage.setItem('authUser', JSON.stringify(data.user));
                 onLogin && onLogin(data.user, data.token);
             }
             setAuthMessage(data.message || (endpoint === 'login' ? 'Login successful' : 'Registration successful'));

@@ -3,20 +3,46 @@
  * Handles dynamic base URL configuration for different environments
  */
 
+const normalizeApiBaseUrl = (value) => {
+    if (!value) return null;
+
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const withoutTrailingSlash = trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+
+    if (withoutTrailingSlash.startsWith('/')) {
+        return withoutTrailingSlash;
+    }
+
+    return withoutTrailingSlash.endsWith('/api')
+        ? withoutTrailingSlash
+        : `${withoutTrailingSlash}/api`;
+};
+
 const getApiBaseUrl = () => {
-    // For Vite, VITE_API_URL will be injected from .env files
-    if (import.meta.env.VITE_API_URL) {
-        return import.meta.env.VITE_API_URL;
+    const configuredUrl = normalizeApiBaseUrl(
+        import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL
+    );
+
+    if (configuredUrl) {
+        return configuredUrl;
     }
 
-    // In production (built app), use Railway backend URL
+    if (typeof window !== 'undefined') {
+        const { protocol, host } = window.location;
+
+        if (host.includes('localhost') || host.includes('127.0.0.1')) {
+            return `${protocol}//localhost:5001/api`;
+        }
+
+        return `${protocol}//${host}/api`;
+    }
+
     if (import.meta.env.PROD) {
-        // Production must use full URL for cross-origin requests
-        // Default to Railway production backend
-        return 'https://e-commerce-production-1f1f.up.railway.app/api';
+        return '/api';
     }
 
-    // In development, use localhost with Vite proxy
     return 'http://localhost:5001/api';
 };
 
@@ -29,8 +55,9 @@ export const API_BASE_URL = getApiBaseUrl();
  * @returns {Promise<Response>}
  */
 export const apiFetch = async (endpoint, options = {}) => {
-    const url = `${API_BASE_URL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+    const url = `${API_BASE_URL}${normalizedEndpoint}`;
+    const token = getStoredToken();
 
     const headers = {
         'Content-Type': 'application/json',
@@ -44,7 +71,7 @@ export const apiFetch = async (endpoint, options = {}) => {
     // IMPORTANT: credentials must be 'include' for cross-origin requests with Authorization header
     return fetch(url, {
         ...options,
-        credentials: 'include',  // ✅ Allow cookies and credentials
+        credentials: 'include',
         headers,
     });
 };
