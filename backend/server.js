@@ -1,7 +1,9 @@
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const compression = require('compression');
 const session = require('express-session');
 
 // Try to load MySQL session store, fall back to memory store
@@ -60,8 +62,11 @@ const PORT = Number(process.env.PORT) || 5001;
 const HOST = process.env.HOST || '0.0.0.0';
 process.env.PORT = String(PORT);
 const passport = require('./config/passport');
+const frontendDistPath = process.env.FRONTEND_DIST_PATH || path.join(__dirname, '..', 'my-app', 'dist');
 
 // Middleware and security
+app.disable('x-powered-by');
+
 // Trust proxy when behind a load balancer (required for secure cookies)
 if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
@@ -73,6 +78,10 @@ const allowedOrigins = [
     'http://localhost:3000',      // Local frontend
     'http://localhost:5173',      // Vite dev server
     'http://localhost',           // Local production
+    'https://mahasu.co.in',       // Production domain
+    'https://www.mahasu.co.in',   // Production domain with www
+    'http://mahasu.co.in',        // Optional non-HTTPS fallback
+    'http://www.mahasu.co.in',    // Optional non-HTTPS fallback
     process.env.FRONTEND_URL,     // Production frontend URL (from env)
 ].filter(Boolean);
 
@@ -112,6 +121,7 @@ app.options('*', cors(corsOptions));
 
 app.use(bodyParser.json({ limit: '10kb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10kb' }));
+app.use(compression());
 
 // Apply security helpers AFTER CORS (helmet, rate-limit, xss-clean, cookie-parser)
 createSecurity(app);
@@ -253,6 +263,16 @@ app.get('/api/health', async (req, res) => {
 if (app._csrfProtection) {
     app.get('/api/csrf-token', app._csrfProtection, (req, res) => {
         res.json({ csrfToken: req.csrfToken() });
+    });
+}
+
+if (process.env.NODE_ENV === 'production' && fs.existsSync(frontendDistPath)) {
+    app.use(express.static(frontendDistPath));
+    app.get('*', (req, res) => {
+        if (req.path.startsWith('/api')) {
+            return res.status(404).json({ error: 'API route not found' });
+        }
+        res.sendFile(path.join(frontendDistPath, 'index.html'));
     });
 }
 

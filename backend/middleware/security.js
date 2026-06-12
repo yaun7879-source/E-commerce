@@ -1,6 +1,7 @@
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const xss = require('xss-clean');
+const mongoSanitize = require('express-mongo-sanitize');
 const cookieParser = require('cookie-parser');
 const csurf = require('csurf');
 const cors = require('cors');
@@ -28,8 +29,9 @@ const createSecurity = (app) => {
         }
     }));
 
-    // Body / query sanitization against XSS
+    // Body / query sanitization against XSS and NoSQL injection
     app.use(xss());
+    app.use(mongoSanitize());
 
     // Cookie parser (required for CSRF and cookie handling)
     app.use(cookieParser());

@@ -34,32 +34,25 @@ const getStoredToken = () => {
 
 const getApiBaseUrl = () => {
     const configuredUrl = normalizeApiBaseUrl(
-        import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL
+        import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE
     );
 
     if (configuredUrl) {
-        if (import.meta.env.PROD && /localhost|127\.0\.0\.1/.test(configuredUrl)) {
-            return 'https://e-commerce-production-1f1f.up.railway.app/api';
-        }
         return configuredUrl;
     }
 
     if (typeof window !== 'undefined') {
-        const { host } = window.location;
+        const { host, protocol } = window.location;
 
         if (host.includes('localhost') || host.includes('127.0.0.1')) {
             return 'http://localhost:5001/api';
         }
 
-        if (import.meta.env.PROD) {
-            return 'https://e-commerce-production-1f1f.up.railway.app/api';
+        if (host.includes('mahasu.co.in')) {
+            return '/api';
         }
 
-        return `${window.location.protocol}//${host}/api`;
-    }
-
-    if (import.meta.env.PROD) {
-        return 'https://e-commerce-production-1f1f.up.railway.app/api';
+        return `${protocol}//${host}/api`;
     }
 
     return 'http://localhost:5001/api';

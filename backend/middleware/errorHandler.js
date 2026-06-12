@@ -10,7 +10,10 @@ const errorHandler = (err, req, res, next) => {
     logger.error(err.stack || err.message || err);
 
     const status = err.status || 500;
-    const response = { error: err.message || 'Internal server error' };
+    const response = {
+        error: err.message || 'Internal server error',
+        timestamp: new Date().toISOString(),
+    };
 
     if (process.env.NODE_ENV === 'development') {
         response.stack = err.stack;

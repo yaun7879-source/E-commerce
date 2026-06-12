@@ -64,8 +64,10 @@ const initializePool = async () => {
             poolInstance = mysql.createPool({
                 ...config,
                 waitForConnections: true,
-                connectionLimit: 10,
+                connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || 10,
                 queueLimit: 0,
+                connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT) || 60000,
+                ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
             });
 
             const connection = await poolInstance.getConnection();
