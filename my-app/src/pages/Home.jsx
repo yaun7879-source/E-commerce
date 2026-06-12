@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../utils/api';
 
 const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) => {
     const user = authUser || null;
@@ -14,6 +15,7 @@ const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) 
     const [loadingAllReviews, setLoadingAllReviews] = useState(false);
     const [addingToCart, setAddingToCart] = useState(false);
     const [cartMessage, setCartMessage] = useState('');
+    const [welcomeMessage, setWelcomeMessage] = useState('');
     const videoRef = useRef(null);
     const bsTimerRef = useRef(null);
 
@@ -75,6 +77,14 @@ const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) 
     useEffect(() => {
         const t = setInterval(() => setCurrentSlide(p => (p + 1) % 3), 4500);
         return () => clearInterval(t);
+    }, []);
+
+    useEffect(() => {
+        const storedMessage = sessionStorage.getItem('authWelcomeMessage');
+        if (storedMessage) {
+            setWelcomeMessage(storedMessage);
+            sessionStorage.removeItem('authWelcomeMessage');
+        }
     }, []);
 
     const startBsTimer = () => {
@@ -153,7 +163,7 @@ const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) 
     const loadAllReviews = async () => {
         setLoadingAllReviews(true);
         try {
-            const response = await fetch('/api/reviews');
+            const response = await fetch(`${API_BASE_URL}/reviews`);
             if (!response.ok) {
                 setAllReviews([]);
                 return;
@@ -192,6 +202,23 @@ const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) 
 
     return (
         <div>
+            {welcomeMessage && (
+                <div style={{
+                    position: 'sticky',
+                    top: 0,
+                    zIndex: 1200,
+                    padding: '0.85rem 1rem',
+                    textAlign: 'center',
+                    background: 'linear-gradient(90deg, rgba(201,169,97,0.18), rgba(168,47,47,0.16))',
+                    borderBottom: '1px solid rgba(201,169,97,0.24)',
+                    color: '#f6ebdc',
+                    fontFamily: 'Cormorant Garamond, serif',
+                    letterSpacing: '0.03em',
+                    fontSize: '0.95rem',
+                }}>
+                    {welcomeMessage}
+                </div>
+            )}
             <style>{`
                 .bs-section {
                     background: var(--char, #2c2825);
@@ -1137,8 +1164,8 @@ const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) 
                     <p className="story-p">Every candle we make carries decades of fragrance tradition. We source the finest wax, the rarest essential oils, and pair them with artisan craftsmanship.</p>
                     <p className="story-p">From tealights for Diwali to luxury pillar candles for everyday indulgence — Mahasu is India's home of authentic fragrances.</p>
                     <div className="story-stats">
-                        <div><div className="stat-n">10K+</div><div className="stat-l">Happy Customers</div></div>
-                        <div><div className="stat-n">200+</div><div className="stat-l">Scent Varieties</div></div>
+                        <div><div className="stat-n">500K+</div><div className="stat-l">Happy Customers</div></div>
+                        <div><div className="stat-n">50+</div><div className="stat-l">Scent Varieties</div></div>
                         <div><div className="stat-n">100%</div><div className="stat-l">Natural Wax</div></div>
                     </div>
                 </div>
@@ -1217,7 +1244,7 @@ const Home = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } }) 
                             autoPlay
                             playsInline
                         >
-                            <source src="/videos/Mahasu_Video.mp4" type="video/mp4" />
+                            <source src="/videos/Mahasu_Video1.mp4" type="video/mp4" />
                             <source src="/videos/Mahasu_Video.webm" type="video/webm" />
                             <p>Your browser doesn't support HTML5 video. Please try another format or update your browser.</p>
                         </video>

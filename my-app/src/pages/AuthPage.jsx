@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { apiFetch, API_BASE_URL } from '../utils/api';
 
 const EnhancedAuthPage = ({ onLogin }) => {
@@ -79,6 +80,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
             })();
         }
     }, [onLogin]);
+    const navigate = useNavigate();
+    const location = useLocation();
     const [resetPassword, setResetPassword] = useState('');
     const [resetStep, setResetStep] = useState('request');
     const [resetMessage, setResetMessage] = useState('');
@@ -275,12 +278,27 @@ const EnhancedAuthPage = ({ onLogin }) => {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || data.message || 'Something went wrong');
-            if (endpoint === 'login') {
-                sessionStorage.setItem('authToken', data.token);
-                sessionStorage.setItem('authUser', JSON.stringify(data.user));
-                onLogin && onLogin(data.user, data.token);
+
+            const user = data.user || data;
+            const token = data.token || null;
+            if (endpoint === 'login' || endpoint === 'register') {
+                sessionStorage.setItem('authToken', token || '');
+                sessionStorage.setItem('authUser', JSON.stringify(user));
+                onLogin && onLogin(user, token);
+
+                const firstName = user?.first_name || user?.name || user?.email || 'there';
+                const welcomeMessage = endpoint === 'login'
+                    ? `Welcome back, ${firstName}!`
+                    : `Welcome, ${firstName}! Your account is ready.`;
+                sessionStorage.setItem('authWelcomeMessage', welcomeMessage);
+                setAuthMessage(data.message || (endpoint === 'login' ? 'Login successful' : 'Registration successful'));
+
+                setTimeout(() => {
+                    navigate('/', { replace: true });
+                }, 220);
+            } else {
+                setAuthMessage(data.message || 'Request successful');
             }
-            setAuthMessage(data.message || (endpoint === 'login' ? 'Login successful' : 'Registration successful'));
             return data;
         } catch (e) { setAuthError(e.message); }
         finally { setAuthLoading(false); }
@@ -347,8 +365,8 @@ const EnhancedAuthPage = ({ onLogin }) => {
                     90% { opacity:0.2; }
                     100% { transform:translateY(-100vh) translateX(var(--drift)) scale(0.6); opacity:0; }
                 }
-                .eau-layout { position:relative; z-index:10; display:flex; width:100%; height: 100vh; overflow: hidden; }
-                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; position:relative; overflow: hidden; }
+                .eau-layout { position:relative; z-index:10; display:flex; width:100%; min-height:100vh; height:auto; overflow:hidden; }
+                .eau-left { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:1.4rem 2rem 1.2rem; position:relative; overflow-x:hidden; overflow-y:auto; min-height:100vh; box-sizing:border-box; }
                 .eau-glow-halo { position:absolute; width:500px; height:500px; border-radius:50%; background:radial-gradient(circle,rgba(201,169,97,0.06) 0%,transparent 70%); top:50%; left:50%; transform:translate(-50%,-50%); pointer-events:none; animation:haloPulse 6s ease-in-out infinite; filter:blur(25px); }
                 @keyframes haloPulse { 0%,100%{opacity:0.4;transform:translate(-50%,-50%) scale(0.95);} 50%{opacity:0.8;transform:translate(-50%,-50%) scale(1.15);} }
                 .eau-candle-icon { display:none; }
@@ -362,14 +380,14 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-divider { display:flex; align-items:center; gap:0.8rem; margin:0 auto 2rem; width:280px; }
                 .eau-div-line { flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(201,169,97,0.4),transparent); }
                 .eau-div-gem { width:6px; height:6px; background:#a82f2f; transform:rotate(45deg); }
-                .eau-features { display:flex; flex-direction:column; gap:0.8rem; max-width:360px; width:100%; }
-                .eau-feat { display:flex; align-items:center; gap:1rem; padding:0.75rem 1rem; background:rgba(168,47,47,0.08); border:1px solid rgba(201,169,97,0.15); border-radius:12px; backdrop-filter:blur(8px); transition:all 0.3s; cursor:default; }
+                .eau-features { display:flex; flex-direction:column; gap:0.7rem; max-width:360px; width:100%; }
+                .eau-feat { display:flex; align-items:center; gap:1rem; padding:0.68rem 0.95rem; background:rgba(168,47,47,0.08); border:1px solid rgba(201,169,97,0.15); border-radius:12px; backdrop-filter:blur(8px); transition:all 0.3s; cursor:default; }
                 .eau-feat:hover { background:rgba(201,169,97,0.08); border-color:rgba(201,169,97,0.35); transform:translateX(5px); box-shadow:0 4px 20px rgba(201,169,97,0.1); }
                 .eau-feat-ico { width:40px; height:40px; background:rgba(201,169,97,0.12); border:1px solid rgba(201,169,97,0.2); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0; }
                 .eau-feat-t { font-weight:500; font-size:0.9rem; color:rgba(245,240,237,0.9); display:block; letter-spacing:0.02em; margin-bottom:2px; }
                 .eau-feat-s { font-size:0.75rem; color:rgba(212,179,116,0.5); letter-spacing:0.02em; }
-                .eau-left-foot { position:absolute; bottom:1.5rem; font-family:'Cinzel',serif; font-size:0.55rem; color:rgba(201,169,97,0.25); letter-spacing:0.3em; text-transform:uppercase; }
-                .eau-right { width:500px; flex-shrink:0; display:flex; flex-direction:column; background:rgba(10,8,5,0.75); backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2); border-left:1px solid rgba(201,169,97,0.15); position:relative; height:100vh; overflow-y:auto; overflow-x:hidden; }
+                .eau-left-foot { position:relative; margin-top:0.8rem; font-family:'Cinzel',serif; font-size:0.55rem; color:rgba(201,169,97,0.25); letter-spacing:0.3em; text-transform:uppercase; text-align:center; }
+                .eau-right { width:min(500px, 46vw); flex-shrink:0; display:flex; flex-direction:column; background:rgba(10,8,5,0.75); backdrop-filter:blur(30px) saturate(1.2); -webkit-backdrop-filter:blur(30px) saturate(1.2); border-left:1px solid rgba(201,169,97,0.15); position:relative; min-height:100vh; max-height:100vh; overflow-y:auto; overflow-x:hidden; }
                 .eau-right::-webkit-scrollbar { width:6px; }
                 .eau-right::-webkit-scrollbar-track { background:transparent; }
                 .eau-right::-webkit-scrollbar-thumb { background:rgba(201,169,97,0.3); border-radius:3px; }
@@ -383,7 +401,7 @@ const EnhancedAuthPage = ({ onLogin }) => {
                 .eau-tab.active { color:#d4b574; }
                 .eau-tab.active::after { content:''; position:absolute; bottom:-1px; left:10%; right:10%; height:2px; background:linear-gradient(90deg,transparent,#c9a961,transparent); border-radius:1px; }
                 .eau-tab:hover:not(.active) { color:rgba(212,179,116,0.6); }
-                .eau-form { flex:1; padding:2.2rem 2.5rem 2.8rem; display:flex; flex-direction:column; position:relative; z-index:1; opacity:0; animation:formReveal 0.45s ease forwards; }
+                .eau-form { flex:1; padding:2rem 2.2rem 2.5rem; display:flex; flex-direction:column; position:relative; z-index:1; opacity:0; animation:formReveal 0.45s ease forwards; box-sizing:border-box; }
                 @keyframes formReveal { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
                 .eau-form-badge { display:inline-flex; align-items:center; gap:0.5rem; background:rgba(168,47,47,0.12); border:1px solid rgba(201,169,97,0.2); border-radius:50px; padding:0.35rem 0.95rem; margin-bottom:1rem; width:fit-content; }
                 .eau-badge-pulse { width:6px; height:6px; border-radius:50%; background:#a82f2f; animation:pulse 2s ease infinite; }

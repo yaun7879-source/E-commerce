@@ -114,8 +114,7 @@ export default function Cancellation() {
                     <ul>
                         <li>You can cancel orders within <strong>24 hours</strong> of placement</li>
                         <li>Orders that are already <strong>shipped or delivered</strong> cannot be cancelled</li>
-                        <li>Full refund will be credited to your original payment method</li>
-                        <li>Refund processing takes <strong>5-7 business days</strong></li>
+                        <li>For refund or order concerns, contact our support team at <strong>+91 9993107161</strong></li>
                     </ul>
                 </div>
 

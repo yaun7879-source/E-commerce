@@ -94,8 +94,8 @@ export default function Return() {
     return (
         <div className="help-page">
             <div className="help-container">
-                <h1>↩️ Return Product</h1>
-                <p className="help-subtitle">Submit a return request for your order</p>
+                <h1>↩️ No Returns Available</h1>
+                <p className="help-subtitle">Please contact our support team for any order-related concerns</p>
 
                 {submitted && (
                     <div className="success-message">
@@ -108,15 +108,20 @@ export default function Return() {
                 <div className="return-info">
                     <h3>Return Policy</h3>
                     <ul>
-                        <li>You can return products within <strong>30 days</strong> of delivery</li>
-                        <li>Product must be <strong>unused</strong> and in <strong>original packaging</strong></li>
-                        <li>Refunds are processed within <strong>5-7 business days</strong></li>
-                        <li>Free return shipping for eligible items</li>
+                        <li><strong>No returns are available</strong> for orders placed at the moment.</li>
+                        <li>If you received a damaged or incorrect item, please contact our support team immediately.</li>
+                        <li>For any concerns, contact us at <strong>+91 9993107161</strong>.</li>
                     </ul>
                 </div>
 
                 <p className="help-tip">If you are not sure which order ID to use, visit the <Link to="/track-order">Track Order</Link> page to see your recent orders.</p>
-                <form onSubmit={handleSubmit} className="return-form">
+                <div className="return-form" style={{ padding: '1.25rem', border: '1px solid #f0e8da', borderRadius: '12px', background: '#fffaf5' }}>
+                    <p style={{ margin: 0, color: '#6b5b4b', lineHeight: 1.7 }}>
+                        We are currently not accepting return requests. Please contact our support team at <strong>+91 9993107161</strong> for assistance with your order.
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="return-form" style={{ display: 'none' }}>
                     <div className="form-group">
                         <label htmlFor="order">Select Order:</label>
                         <select

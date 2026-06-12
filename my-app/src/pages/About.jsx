@@ -85,11 +85,11 @@ const About = () => {
                 <h2>By The Numbers</h2>
                 <div className="about-stats">
                     <div className="about-stat">
-                        <div className="about-stat-number">10K+</div>
+                        <div className="about-stat-number">500K+</div>
                         <p className="about-stat-label">Happy Customers</p>
                     </div>
                     <div className="about-stat">
-                        <div className="about-stat-number">200+</div>
+                        <div className="about-stat-number">50+</div>
                         <p className="about-stat-label">Scent Varieties</p>
                     </div>
                     <div className="about-stat">

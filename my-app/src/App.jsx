@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { apiFetch, API_BASE_URL } from './utils/api';
 import Home from './pages/Home';
@@ -50,6 +50,7 @@ function App() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [lastOrderId, setLastOrderId] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const totalItems = cartItems.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cartItems.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -394,7 +395,7 @@ function App() {
 
   const addToCart = async (product) => {
     if (!authUser && !authToken) {
-      showToast('Please log in to save your cart');
+      navigate('/login', { state: { from: location.pathname, authRedirect: true } });
       return false;
     }
 
@@ -635,8 +636,9 @@ function App() {
       <div className="app-container">
         {/* ── NAVIGATION ── */}
         <nav className="nav">
+
           <Link to="/" className="logo" onClick={handleNavClick}>
-            Maha<span>su</span>
+            <img src="/public/Logo-image.png" alt="Mahasu" className="logo-img" />
           </Link>
 
           {/* Mobile Menu Toggle */}

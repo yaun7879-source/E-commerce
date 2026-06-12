@@ -1297,8 +1297,8 @@ body {
 }
 
 .product-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.18);
     border-color: var(--gold);
 }
 
@@ -1313,11 +1313,11 @@ body {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.3s ease;
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .product-card:hover .product-image img {
-    transform: scale(1.05);
+    transform: scale(1.12);
 }
 
 .product-badge {
@@ -2072,6 +2072,19 @@ body {
     box-shadow: 0 8px 20px rgba(255, 215, 0, 0.25);
 }
 
+.logo-img {
+    height: clamp(45px, 6vw, 65px);
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    padding: 0;
+}
+
 .co-subscribe-btn:hover:not(:disabled) {
     background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
     transform: translateY(-2px);
@@ -2195,11 +2208,25 @@ body {
 
     .hero-left {
         width: 100%;
-        background: linear-gradient(to bottom,
-                rgba(240, 232, 218, 0.75) 0%,
-                rgba(240, 232, 218, 0.45) 50%,
-                transparent 100%);
+        background: transparent;
         padding: clamp(1.5rem, 4vw, 2.5rem) clamp(1rem, 4vw, 2rem) clamp(1.5rem, 3vw, 2rem);
+    }
+
+    .hero-btns {
+        flex-wrap: wrap;
+        gap: 0.7rem;
+    }
+
+    .btn-primary,
+    .btn-ghost {
+        padding: 0.8rem 1rem;
+        border-radius: 999px;
+    }
+
+    .btn-ghost {
+        background: rgba(255, 255, 255, 0.8);
+        color: var(--char);
+        border: 1px solid rgba(44, 36, 22, 0.12);
     }
 
     .hero-h1 {

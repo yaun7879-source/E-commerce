@@ -16,22 +16,10 @@ export default function HelpHub() {
                         <p>Track your shipment and see delivery status in real-time</p>
                     </Link>
 
-                    <Link to="/return" className="help-card">
-                        <div className="help-card-icon">↩️</div>
-                        <h3>Return Product</h3>
-                        <p>Return items within 30 days of delivery. Hassle-free process</p>
-                    </Link>
-
                     <Link to="/cancellation" className="help-card">
                         <div className="help-card-icon">❌</div>
                         <h3>Cancel Order</h3>
                         <p>Cancel your order within 24 hours of placement</p>
-                    </Link>
-
-                    <Link to="/faq" className="help-card">
-                        <div className="help-card-icon">❓</div>
-                        <h3>FAQ</h3>
-                        <p>Find answers to frequently asked questions</p>
                     </Link>
 
                     <Link to="/privacy-policy" className="help-card">
@@ -56,7 +44,7 @@ export default function HelpHub() {
                             <span className="contact-icon">📞</span>
                             <div>
                                 <strong>Phone</strong>
-                                <p>1-800-MAHASU-1</p>
+                                <p>+91 9993107161</p>
                             </div>
                         </div>
                         <div className="contact-item">

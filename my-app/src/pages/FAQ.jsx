@@ -37,7 +37,7 @@ export default function FAQ() {
                 {
                     id: 2,
                     question: 'What is your return policy?',
-                    answer: 'You can return products within 30 days of delivery. The product must be unused and in original packaging. Visit the "Return" page to initiate a return.',
+                    answer: 'We currently do not accept returns. Please contact our support team at +91 9993107161 for assistance with any order concerns.',
                     category: 'Returns'
                 },
                 {
@@ -58,12 +58,6 @@ export default function FAQ() {
                     answer: 'We accept all major credit cards, debit cards, UPI, and digital wallets through Razorpay.',
                     category: 'Payment'
                 },
-                {
-                    id: 6,
-                    question: 'How do I get a refund?',
-                    answer: 'Refunds are processed within 5-7 business days after we receive and verify your returned product. You will receive a notification once the refund is initiated.',
-                    category: 'Returns'
-                }
             ]);
         } finally {
             setLoading(false);
@@ -72,9 +66,9 @@ export default function FAQ() {
 
     const categories = ['all', ...new Set(faqs.map(faq => faq.category))];
 
-    const filteredFaqs = selectedCategory === 'all'
+    const filteredFaqs = (selectedCategory === 'all'
         ? faqs
-        : faqs.filter(faq => faq.category === selectedCategory);
+        : faqs.filter(faq => faq.category === selectedCategory)).filter((faq) => !/refund/i.test(faq.question || '') && !/refund/i.test(faq.answer || ''));
 
     const toggleExpand = (id) => {
         setExpandedId(expandedId === id ? null : id);

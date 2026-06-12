@@ -1,0 +1,11 @@
+<svg width="220" height="72" viewBox="0 0 220 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="220" height="72" rx="18" fill="#FFF8EE"/>
+  <circle cx="36" cy="36" r="24" fill="#2A1F14"/>
+  <path d="M36 18C31 26 28 30 28 36C28 42 31 46 36 54C41 46 44 42 44 36C44 30 41 26 36 18Z" fill="#C9A96E"/>
+  <path d="M28 36C28 31 31 28 36 26C41 28 44 31 44 36C44 41 41 44 36 46C31 44 28 41 28 36Z" fill="#E8DDD0"/>
+  <rect x="25" y="42" width="22" height="14" rx="4" fill="#F0E8DA"/>
+  <path d="M84 24H112" stroke="#2A1F14" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 36H122" stroke="#B8936A" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 48H116" stroke="#2A1F14" stroke-width="4" stroke-linecap="round"/>
+  <text x="132" y="41" fill="#2A1F14" font-family="'Playfair Display', 'Georgia', serif" font-size="24" font-weight="700">MahaSu</text>
+</svg>

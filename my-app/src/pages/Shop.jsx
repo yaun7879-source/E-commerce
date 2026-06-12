@@ -244,8 +244,8 @@ const Shop = ({ addToCart, likedItems = [], toggleLike = () => { } }) => {
                 }
 
                 .product-card:hover {
-                    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-                    transform: translateY(-2px);
+                    box-shadow: 0 10px 24px rgba(0,0,0,0.16);
+                    transform: translateY(-6px) scale(1.03);
                 }
 
                 .shop-header {
@@ -324,11 +324,11 @@ const Shop = ({ addToCart, likedItems = [], toggleLike = () => { } }) => {
                     width: 100%;
                     height: 100%;
                     object-fit: cover;
-                    transition: transform 0.3s ease;
+                    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
                 }
 
                 .product-card:hover .product-img {
-                    transform: scale(1.05);
+                    transform: scale(1.12);
                 }
 
                 /* ── Product Info Section (Flex Grow) ── */

@@ -12,6 +12,7 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
     const location = useLocation();
     const product = products.find((item) => item.id === Number(id));
     const [imageLoaded, setImageLoaded] = useState(false);
+    const [imageError, setImageError] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
     const [showAddedNotification, setShowAddedNotification] = useState(false);
@@ -25,6 +26,7 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
         window.scrollTo(0, 0);
         setSelectedImageIndex(0);
         setImageLoaded(false);
+        setImageError(false);
     }, [id]);
 
     const loadReviewSummary = async () => {
@@ -180,6 +182,13 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                 '/images/Ocean Breeze Pack of 3/5th.png',
                 '/images/Ocean Breeze Pack of 3/6th.png',
             ],
+            3: [
+                '/images/Rose Pillar Candle 2pc/1st Image.png',
+                '/images/Rose Pillar Candle 2pc/4th Image.png',
+                '/images/Rose Pillar Candle 2pc/3rd Image.png',
+                '/images/Rose Pillar Candle 2pc/5th Image.png',
+                '/images/Rose Pillar Candle 2pc/6th Image.png',
+            ],
             4: [
                 '/images/Round Shape Red 12pc/1st Image.png',
                 '/images/Round Shape Red 12pc/3rd Image.png',
@@ -211,6 +220,17 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                 '/images/Heartshape Pink 12pc/5th Image.png',
                 '/images/Heartshape Pink 12pc/6th Image.png',
             ],
+           
+            10: [
+                '/images/Mahasu Scented Jar/3nd Image.png',
+                '/images/Mahasu Scented Jar/5th Image.png',
+            ],
+            11: [
+                '/images/Rose Pillar Red and White/1st.png',
+                '/images/Rose Pillar Red and White/2nd Image.png',
+                '/images/Rose Pillar Red and White/4th Image.png',
+                '/images/Rose Pillar Red and White/5th image.png',
+            ],
             12: [
                 '/images/I LED/1st Image.png',
                 '/images/I LED/3rd Image.png',
@@ -218,16 +238,14 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                 '/images/I LED/5th Image.png',
                 '/images/I LED/6th Image.png',
             ],
-            10: [
-                '/images/Mahasu Scented Jar/3nd Image.png',
-                '/images/Mahasu Scented Jar/5th Image.png',
-            ],
-            1: [
-                '/images/Red and White Bubble Heartshape/4th Image.png',
-                '/images/Red and White Bubble Heartshape/1st Image.png',
-                '/images/Red and White Bubble Heartshape/2nd Image.png',
-                '/images/Red and White Bubble Heartshape/3rd Image.png',
-            ],
+            
+            13: [
+                '/images/Love Pillar Red and White/1st Image.png',
+                '/images/Love Pillar Red and White/3rd Image.png',
+                '/images/Love Pillar Red and White/4th Image.png',
+                '/images/Love Pillar Red and White/5th Image.png',
+            ]
+
         };
 
         const matchedImages = productImageMap[product.id] || [];
@@ -240,6 +258,20 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
     };
 
     const galleryImages = getGalleryImages();
+
+    useEffect(() => {
+        if (!galleryImages.length || galleryImages.length < 2) return;
+
+        const intervalId = window.setInterval(() => {
+            setSelectedImageIndex((prevIndex) => (prevIndex + 1) % galleryImages.length);
+            setImageLoaded(false);
+            setImageError(false);
+        }, 2000);
+
+        return () => window.clearInterval(intervalId);
+    }, [galleryImages.length, id]);
+
+    const activeImage = galleryImages[selectedImageIndex] || product.img;
 
     return (
         <div>
@@ -313,7 +345,11 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                 .product-image-card img {
                     width: 100%;
                     height: 100%;
-                    object-fit: cover;
+                    object-fit: contain;
+                    object-position: center;
+                    padding: 1rem;
+                    box-sizing: border-box;
+                    background: #fff;
                     opacity: 0;
                     animation: imageSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
                 }
@@ -355,9 +391,13 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                 .product-thumbnails {
                     display: flex;
                     gap: 0.8rem;
+                    flex-wrap: wrap;
+                    overflow-x: auto;
+                    padding-bottom: 0.25rem;
                 }
 
                 .thumbnail {
+                    flex: 0 0 60px;
                     width: 60px;
                     height: 60px;
                     border-radius: 12px;
@@ -1271,10 +1311,14 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                         <div className="product-image-card">
                             {!imageLoaded && <div className="product-image-skeleton" />}
                             <img
-                                key={galleryImages[selectedImageIndex]}
-                                src={galleryImages[selectedImageIndex]}
+                                key={activeImage}
+                                src={imageError ? product.img : activeImage}
                                 alt={`${product.name} view ${selectedImageIndex + 1}`}
-                                onLoad={() => setImageLoaded(true)}
+                                onLoad={() => {
+                                    setImageLoaded(true);
+                                    setImageError(false);
+                                }}
+                                onError={() => setImageError(true)}
                                 style={{ display: imageLoaded ? 'block' : 'none' }}
                             />
                             <div className="product-image-badge">Premium Quality</div>
@@ -1290,6 +1334,7 @@ const Product = ({ authUser, addToCart, likedItems = [], toggleLike = () => { } 
                                     onClick={() => {
                                         setSelectedImageIndex(idx);
                                         setImageLoaded(false);
+                                        setImageError(false);
                                     }}
                                     aria-label={`Show image ${idx + 1}`}
                                 >
