@@ -638,7 +638,7 @@ function App() {
         <nav className="nav">
 
           <Link to="/" className="logo" onClick={handleNavClick}>
-            <img src="/public/Logo-image.png" alt="Mahasu" className="logo-img" />
+            <img src="/public/images/Logo-image.png" alt="Mahasu" className="logo-img" />
           </Link>
 
           {/* Mobile Menu Toggle */}
